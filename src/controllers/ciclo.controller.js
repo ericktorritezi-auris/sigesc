@@ -34,4 +34,15 @@ async function getHistoricoCliente(req, res, next) {
   }
 }
 
-module.exports = { getCiclos, getDashboard, getHistoricoCliente };
+async function getRelatorioPdf(req, res, next) {
+  try {
+    const { buffer, nomeArquivo } = await cicloService.gerarRelatorioPdf(req.usuario, req.params.id);
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${nomeArquivo}"`);
+    res.status(200).send(buffer);
+  } catch (err) {
+    tratarErro(err, res, next);
+  }
+}
+
+module.exports = { getCiclos, getDashboard, getHistoricoCliente, getRelatorioPdf };

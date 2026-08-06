@@ -1,6 +1,7 @@
 const { query } = require('../config/db');
 const { gestorEfetivoId } = require('./empresa.service');
 const calculoService = require('./calculo.service');
+const { gerarRelatorioPDF } = require('./pdf.service');
 
 class AppError extends Error {
   constructor(message, status = 400) {
@@ -56,4 +57,33 @@ async function buscarHistoricoCliente(usuarioAutenticado, cicloId, pesquisaClien
   return { cliente: rows[0], historico };
 }
 
-module.exports = { listarCiclos, buscarDashboard, buscarHistoricoCliente, AppError };
+/**
+ * Gera o relatório executivo em PDF do ciclo, com os dados reais do momento
+ * em que foi exportado — usado tanto pelo botão do Dashboard quanto pelo
+ * Modo Apresentação.
+ */
+async function gerarRelatorioPdf(usuarioAutenticado, cicloId) {
+  const ciclo = await carregarCicloOuFalhar(usuarioAutenticado, cicloId);
+  const dashboard = await calculoService.buscarDashboardCiclo(cicloId);
+
+  const gestorId = gestorEfetivoId(usuarioAutenticado);
+  const { rows } = await query(
+    `SELECT u.nome AS gestor_nome, o.nome AS organizacao_nome
+     FROM usuarios u JOIN organizacoes o ON o.id = u.organizacao_id
+     WHERE u.id = $1`,
+    [gestorId]
+  );
+  const { gestor_nome: gestorNome, organizacao_nome: organizacaoNome } = rows[0] || {};
+
+  const buffer = await gerarRelatorioPDF({
+    cicloTitulo: ciclo.titulo,
+    organizacaoNome: organizacaoNome || 'SIGESC',
+    gestorNome: gestorNome || '—',
+    versao: process.env.APP_VERSION || '1.0',
+    dashboard,
+  });
+
+  return { buffer, nomeArquivo: `sigesc-relatorio-${ciclo.titulo.toLowerCase().replace(/[^a-z0-9]+/g, '-')}.pdf` };
+}
+
+module.exports = { listarCiclos, buscarDashboard, buscarHistoricoCliente, gerarRelatorioPdf, AppError };

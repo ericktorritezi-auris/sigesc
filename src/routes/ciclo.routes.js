@@ -9,5 +9,6 @@ router.use(autenticar, bloquearAdministrador);
 router.get('/', cicloController.getCiclos);
 router.get('/:id/dashboard', cicloController.getDashboard);
 router.get('/:id/clientes/:clienteId/historico', cicloController.getHistoricoCliente);
+router.get('/:id/relatorio-pdf', cicloController.getRelatorioPdf);
 
 module.exports = router;

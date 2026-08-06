@@ -52,7 +52,11 @@
             <div class="sub" id="topbar-sub">Carregando...</div>
           </div>
         </div>
-        <select id="select-ciclo" class="ciclo-select"></select>
+        <div style="display:flex;gap:10px;align-items:center;">
+          <select id="select-ciclo" class="ciclo-select"></select>
+          <button class="btn btn-outline-dark" id="btn-exportar-pdf" style="padding:9px 14px;font-size:12.5px;display:none;">📥 Exportar PDF</button>
+          <button class="btn btn-primary" id="btn-modo-tv" style="padding:9px 14px;font-size:12.5px;display:none;">📺 Modo apresentação</button>
+        </div>
       </div>
 
       <div class="content">
@@ -107,6 +111,58 @@
     </div>
   </div>
 
+  <!-- MODO APRESENTAÇÃO (TV) -->
+  <div class="tv-overlay" id="tv-overlay">
+    <button class="tv-exit" id="tv-exit">✕ Sair (Esc)</button>
+    <div class="tv-slide active" id="tv-slide-0">
+      <div class="tv-eyebrow" id="tv-ciclo-nome">Visão geral</div>
+      <div class="tv-title">Saúde contratual consolidada</div>
+      <div class="tv-kpis" id="tv-kpis"></div>
+    </div>
+    <div class="tv-slide" id="tv-slide-1">
+      <div class="tv-eyebrow">Ranking · Maior para o menor</div>
+      <div class="tv-title">Quem precisa de atenção agora</div>
+      <div id="tv-ranking"></div>
+    </div>
+    <div class="tv-slide" id="tv-slide-2">
+      <div class="tv-eyebrow">Evolução mensal · ISC Global</div>
+      <div class="tv-title">Tendência dos últimos meses</div>
+      <svg viewBox="0 0 700 260" width="100%" height="260" id="tv-chart-evolucao"></svg>
+      <div id="tv-chart-labels" style="display:flex;justify-content:space-between;font-size:13px;color:#8FA0B8;margin-top:8px;"></div>
+    </div>
+    <div class="tv-slide" id="tv-slide-3">
+      <div class="tv-eyebrow">Perfil dos respondentes</div>
+      <div class="tv-title">Quem está respondendo nossas pesquisas</div>
+      <div id="tv-perfil" style="display:flex;flex-direction:column;gap:16px;"></div>
+    </div>
+    <div class="tv-dots" id="tv-dots"></div>
+  </div>
+
+<style>
+  .tv-overlay{position:fixed;inset:0;background:linear-gradient(160deg,#0D1B2A,#1B263B);z-index:200;display:none;flex-direction:column;padding:50px 60px;color:#fff;}
+  .tv-overlay.active{display:flex;}
+  .tv-exit{position:absolute;top:24px;right:28px;background:rgba(255,255,255,.1);color:#fff;padding:9px 16px;border-radius:9px;font-size:12.5px;font-weight:600;}
+  .tv-slide{display:none;flex:1;flex-direction:column;justify-content:center;animation:tvIn .5s ease;}
+  .tv-slide.active{display:flex;}
+  @keyframes tvIn{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
+  .tv-eyebrow{color:#00B4A6;font-size:13px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;margin-bottom:16px;}
+  .tv-title{font-size:30px;font-weight:800;margin-bottom:36px;}
+  .tv-kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:20px;}
+  .tv-kpi{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:16px;padding:26px;text-align:center;}
+  .tv-kpi .v{font-size:38px;font-weight:800;}
+  .tv-kpi .l{font-size:12.5px;color:#B9C4D6;margin-top:8px;text-transform:uppercase;letter-spacing:.05em;}
+  .tv-rank-row{display:flex;align-items:center;gap:16px;padding:14px 0;border-bottom:1px solid rgba(255,255,255,.08);font-size:16px;}
+  .tv-rank-row .pos{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;flex-shrink:0;}
+  .tv-rank-row .bar-track{flex:1;height:10px;background:rgba(255,255,255,.1);border-radius:10px;overflow:hidden;}
+  .tv-rank-row .bar-fill{height:100%;border-radius:10px;}
+  .tv-dots{display:flex;gap:8px;justify-content:center;margin-top:20px;}
+  .tv-dots span{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.25);}
+  .tv-dots span.on{background:#00B4A6;}
+  .tv-perfil-row .top{display:flex;justify-content:space-between;font-size:15px;margin-bottom:8px;}
+  .tv-perfil-row .track{height:12px;background:rgba(255,255,255,.1);border-radius:10px;overflow:hidden;}
+  .tv-perfil-row .fill{height:100%;border-radius:10px;}
+</style>
+
 <style>
   .ciclo-select{border:1.5px solid #E2E8F0;border-radius:10px;padding:9px 14px;font-family:inherit;font-size:13px;color:var(--azul-profundo);background:#fff;max-width:220px;}
   .sub-label{font-size:11.5px;color:var(--cinza-medio);font-weight:600;}
@@ -153,6 +209,9 @@
 
     let cicloAtualId = null;
     let pollingTimer = null;
+    let ultimoDashboard = null;
+    let tvIndex = 0;
+    let tvTimer = null;
 
     async function apiFetch(path) {
       const resp = await fetch(path, { headers: { Authorization: 'Bearer ' + token } });
@@ -229,6 +288,9 @@
       document.getElementById('dashboard-vazio').style.display = data.kpis ? 'none' : 'block';
       document.getElementById('dashboard-conteudo').style.display = data.kpis ? 'block' : 'none';
       document.getElementById('topbar-sub').textContent = data.ciclo.titulo + (data.kpis ? ` · ${formatMes(data.kpis.anoMes)}` : '');
+      document.getElementById('btn-exportar-pdf').style.display = data.kpis ? 'inline-flex' : 'none';
+      document.getElementById('btn-modo-tv').style.display = data.kpis ? 'inline-flex' : 'none';
+      ultimoDashboard = data;
       if (!data.kpis) return;
 
       renderKpis(data.kpis);
@@ -381,6 +443,98 @@
       localStorage.removeItem('sigesc_token');
       window.location.href = '/login.html';
     });
+
+    // ================= EXPORTAR PDF =================
+    document.getElementById('btn-exportar-pdf').addEventListener('click', async () => {
+      const btn = document.getElementById('btn-exportar-pdf');
+      const textoOriginal = btn.textContent;
+      btn.textContent = 'Gerando...';
+      btn.disabled = true;
+      try {
+        const resp = await fetch(`/api/ciclos/${cicloAtualId}/relatorio-pdf`, { headers: { Authorization: 'Bearer ' + token } });
+        if (!resp.ok) throw new Error('Falha ao gerar o PDF.');
+        const blob = await resp.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `sigesc-relatorio-${cicloAtualId}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+      } catch (err) {
+        mostrarMensagem('Erro ao exportar PDF: ' + err.message, 'error');
+      } finally {
+        btn.textContent = textoOriginal;
+        btn.disabled = false;
+      }
+    });
+
+    // ================= MODO APRESENTAÇÃO (TV) =================
+    document.getElementById('btn-modo-tv').addEventListener('click', iniciarTV);
+    document.getElementById('tv-exit').addEventListener('click', pararTV);
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') pararTV(); });
+
+    function iniciarTV() {
+      if (!ultimoDashboard || !ultimoDashboard.kpis) return;
+      renderTVConteudo(ultimoDashboard);
+      document.getElementById('tv-overlay').classList.add('active');
+      tvIndex = 0;
+      mostrarSlideTV(0);
+      tvTimer = setInterval(() => { tvIndex = (tvIndex + 1) % 4; mostrarSlideTV(tvIndex); }, 6500);
+    }
+    function pararTV() {
+      document.getElementById('tv-overlay').classList.remove('active');
+      clearInterval(tvTimer);
+    }
+    function mostrarSlideTV(i) {
+      document.querySelectorAll('.tv-slide').forEach((s) => s.classList.remove('active'));
+      document.getElementById('tv-slide-' + i).classList.add('active');
+      document.querySelectorAll('#tv-dots span').forEach((d) => d.classList.remove('on'));
+      const dot = document.getElementById('tv-dot-' + i);
+      if (dot) dot.classList.add('on');
+    }
+
+    function renderTVConteudo(data) {
+      document.getElementById('tv-ciclo-nome').textContent = `Visão geral · ${data.ciclo.titulo} · ${formatMes(data.kpis.anoMes)}`;
+
+      const kpiItens = [
+        ['ISC Geral', data.kpis.isc], ['ISA · Atendimento', data.kpis.isa], ['ISE · Infraestrutura', data.kpis.ise],
+        ['IST · Tecnologia', data.kpis.ist], ['ISV · Valor Percebido', data.kpis.isv],
+      ];
+      document.getElementById('tv-kpis').innerHTML = kpiItens.map(([label, val]) => `
+        <div class="tv-kpi"><div class="v" style="color:${corFaixa(val)};">${Number(val).toFixed(1).replace('.', ',')}</div><div class="l">${label}</div></div>
+      `).join('');
+
+      document.getElementById('tv-ranking').innerHTML = data.ranking.slice(0, 8).map((r, i) => {
+        const cor = corFaixa(r.score_geral);
+        const pct = Math.min(100, (Number(r.score_geral) / 10) * 100);
+        return `<div class="tv-rank-row"><div class="pos" style="background:${cor};">${i + 1}</div>
+          <span style="width:280px;">${r.nome_cliente}</span>
+          <div class="bar-track"><div class="bar-fill" style="width:${pct}%;background:${cor};"></div></div>
+          <strong style="width:44px;text-align:right;color:${cor};">${Number(r.score_geral).toFixed(1).replace('.', ',')}</strong></div>`;
+      }).join('');
+
+      const evo = data.evolucaoMensal;
+      const svg = document.getElementById('tv-chart-evolucao');
+      if (evo.length > 0) {
+        const w = 700, h = 220, pad = 10;
+        const pontos = evo.map((e, i) => {
+          const x = evo.length === 1 ? w / 2 : pad + (i / (evo.length - 1)) * (w - pad * 2);
+          const y = h - pad - (Number(e.isc) / 10) * (h - pad * 2);
+          return `${x},${y}`;
+        });
+        svg.innerHTML = `<polyline points="${pontos.join(' ')}" fill="none" stroke="#00B4A6" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+          ${pontos.map((p) => `<circle cx="${p.split(',')[0]}" cy="${p.split(',')[1]}" r="6" fill="#00B4A6"/>`).join('')}`;
+        document.getElementById('tv-chart-labels').innerHTML = evo.map((e) => `<span>${formatMes(e.ano_mes)}</span>`).join('');
+      }
+
+      document.getElementById('tv-perfil').innerHTML = data.perfilRespondentes.map((p) => `
+        <div class="tv-perfil-row"><div class="top"><span>${p.perfil}</span><strong>${p.percentual}%</strong></div>
+        <div class="track"><div class="fill" style="width:${p.percentual}%;background:#2563EB;"></div></div></div>
+      `).join('');
+
+      document.getElementById('tv-dots').innerHTML = [0, 1, 2, 3].map((i) => `<span id="tv-dot-${i}"></span>`).join('');
+    }
 
     const sidebar = document.getElementById('sidebar');
     const backdrop = document.getElementById('sidebar-backdrop');
