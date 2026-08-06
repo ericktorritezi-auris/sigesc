@@ -7,19 +7,14 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/css/style.css">
-
-<!-- PWA / Favicon -->
 <link rel="manifest" href="/manifest.json">
 <link rel="icon" type="image/x-icon" href="/favicon.ico">
 <link rel="icon" type="image/png" sizes="16x16" href="/icons/favicon-16x16.png">
 <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32x32.png">
 <link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-touch-icon.png">
-<link rel="apple-touch-icon" sizes="152x152" href="/icons/apple-touch-icon-152x152.png">
-<link rel="apple-touch-icon" sizes="167x167" href="/icons/apple-touch-icon-167x167.png">
 <meta name="theme-color" content="#0D1B2A">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="SIGESC">
 </head>
 <body data-app-version="1.0">
@@ -38,14 +33,12 @@
       <div class="side-nav">
         <button class="active">📊 Dashboard</button>
         <a href="/app/pesquisas.html">📋 Pesquisas</a>
-        <button disabled title="Disponível no Sprint 3" style="opacity:.4;cursor:not-allowed;">💬 Respostas</button>
-        <button disabled title="Disponível no Sprint 6" style="opacity:.4;cursor:not-allowed;">🛡️ LGPD</button>
-        <button disabled title="Disponível no Sprint 6" style="opacity:.4;cursor:not-allowed;">👥 Usuários</button>
-        <button disabled title="Disponível no Sprint 6" style="opacity:.4;cursor:not-allowed;">⚙️ Configurações</button>
+        <button disabled style="opacity:.4;cursor:not-allowed;">💬 Respostas</button>
+        <button disabled style="opacity:.4;cursor:not-allowed;">🛡️ LGPD</button>
+        <button disabled style="opacity:.4;cursor:not-allowed;">👥 Usuários</button>
+        <button disabled style="opacity:.4;cursor:not-allowed;">⚙️ Configurações</button>
       </div>
-      <div class="side-foot">
-        <button id="btn-logout">↩ Sair</button>
-      </div>
+      <div class="side-foot"><button id="btn-logout">↩ Sair</button></div>
     </div>
 
     <div class="main">
@@ -56,90 +49,344 @@
           </button>
           <div>
             <h2>Dashboard</h2>
-            <div class="sub">Sprint 1 — fundação do sistema</div>
+            <div class="sub" id="topbar-sub">Carregando...</div>
           </div>
         </div>
+        <select id="select-ciclo" class="ciclo-select"></select>
       </div>
+
       <div class="content">
-        <div class="empty-state">
+        <div id="msg-area"></div>
+        <div id="dashboard-vazio" class="empty-state" style="display:none;">
           <div class="icon">📊</div>
-          <h3>Login funcionando — bem-vindo(a), <span id="nome-usuario">...</span>!</h3>
-          <p>Os dados de pesquisas, respostas e indicadores entram nas próximas sprints. Esta tela confirma que a autenticação, o banco de dados e a sessão estão funcionando de ponta a ponta.</p>
+          <h3>Nenhum ciclo com dados ainda</h3>
+          <p>Crie uma pesquisa, ative-a e colete pelo menos uma resposta para o dashboard começar a mostrar os indicadores.</p>
+          <a href="/app/pesquisas.html" class="btn btn-primary" style="margin-top:16px;display:inline-flex;">Ir para Pesquisas</a>
         </div>
+
+        <div id="dashboard-conteudo" style="display:none;">
+          <div class="kpi-grid" id="kpi-grid"></div>
+
+          <div class="grid-2">
+            <div class="card">
+              <div class="card-head"><h3>Evolução mensal do ISC</h3><span class="sub-label" id="evolucao-periodo"></span></div>
+              <svg viewBox="0 0 600 200" width="100%" height="200" preserveAspectRatio="none" id="chart-evolucao"></svg>
+              <div class="chart-x-labels" id="chart-evolucao-labels"></div>
+            </div>
+            <div class="card">
+              <div class="card-head"><h3>Distribuição por faixa de saúde</h3></div>
+              <div style="display:flex;align-items:center;gap:20px;flex-wrap:wrap;">
+                <svg viewBox="0 0 200 200" width="150" height="150" id="chart-donut"></svg>
+                <div id="donut-legend" style="flex:1;min-width:140px;"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="grid-2">
+            <div class="card">
+              <div class="card-head"><h3>Ranking de clientes</h3><span class="sub-label">Maior → menor score</span></div>
+              <div id="ranking-list"></div>
+            </div>
+            <div class="card">
+              <div class="card-head"><h3>Perfil dos respondentes</h3></div>
+              <div id="perfil-list"></div>
+            </div>
+          </div>
+
+          <div class="table-wrap">
+            <div class="card-head" style="padding:16px 18px 0;"><h3>Últimas respostas recebidas</h3></div>
+            <table>
+              <thead><tr><th>Cliente</th><th>Empresa</th><th>Score</th><th>Recebida em</th></tr></thead>
+              <tbody id="ultimas-respostas-rows"></tbody>
+            </table>
+          </div>
+        </div>
+
         <div id="app-footer"></div>
       </div>
     </div>
   </div>
 
+<style>
+  .ciclo-select{border:1.5px solid #E2E8F0;border-radius:10px;padding:9px 14px;font-family:inherit;font-size:13px;color:var(--azul-profundo);background:#fff;max-width:220px;}
+  .sub-label{font-size:11.5px;color:var(--cinza-medio);font-weight:600;}
+  .kpi-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:20px;}
+  @media(max-width:900px){.kpi-grid{grid-template-columns:repeat(2,1fr);}}
+  .kpi-card{background:#fff;border-radius:14px;padding:16px;box-shadow:var(--shadow);border:1px solid #EEF2F7;}
+  .kpi-card .kpi-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;gap:6px;}
+  .kpi-card .kpi-label{font-size:11.5px;color:var(--cinza-medio);font-weight:600;}
+  .kpi-card .kpi-val{font-size:24px;font-weight:800;color:var(--azul-profundo);}
+  .badge{font-size:10px;font-weight:700;padding:3px 8px;border-radius:20px;display:inline-block;white-space:nowrap;}
+  .badge-excelente{background:#DCFCE7;color:#15803D;}
+  .badge-saudavel{background:#DBEAFE;color:#1D4ED8;}
+  .badge-atencao{background:#FEF3C7;color:#B45309;}
+  .badge-critico{background:#FEE2E2;color:#B91C1C;}
+  .grid-2{display:grid;grid-template-columns:1.4fr 1fr;gap:16px;margin-bottom:20px;}
+  @media(max-width:900px){.grid-2{grid-template-columns:1fr;}}
+  .card{background:#fff;border-radius:14px;padding:20px;box-shadow:var(--shadow);border:1px solid #EEF2F7;margin-bottom:0;}
+  .card-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;}
+  .card-head h3{font-size:14.5px;}
+  .chart-x-labels{display:flex;justify-content:space-between;font-size:10.5px;color:var(--cinza-medio);margin-top:4px;padding:0 4px;}
+  .rank-row{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid #F4F6F9;}
+  .rank-row:last-child{border-bottom:none;}
+  .rank-pos{width:22px;height:22px;border-radius:50%;color:#fff;font-size:10.5px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+  .rank-info{flex:1;min-width:0;}
+  .rank-name{font-size:13px;font-weight:600;color:var(--azul-profundo);}
+  .rank-empresa{font-size:11px;color:var(--cinza-medio);}
+  .rank-track{width:70px;height:6px;background:var(--cinza-claro);border-radius:10px;overflow:hidden;flex-shrink:0;}
+  .rank-fill{height:100%;border-radius:10px;}
+  .rank-score{font-size:13px;font-weight:800;width:34px;text-align:right;flex-shrink:0;}
+  .perfil-row{margin-bottom:12px;}
+  .perfil-row:last-child{margin-bottom:0;}
+  .perfil-top{display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:5px;}
+  .perfil-track{height:7px;background:var(--cinza-claro);border-radius:10px;overflow:hidden;}
+  .perfil-fill{height:100%;border-radius:10px;background:var(--azul-inteligente);}
+</style>
+
   <script src="/js/footer.js"></script>
   <script src="/js/pwa.js"></script>
   <script>
-    // Blindagem: se o footer.js (utilitário externo) falhar ao carregar por qualquer motivo
-    // (rede instável, etc), isso NÃO pode travar o restante do script — sessão e menu
-    // sanduíche têm que continuar funcionando independente disso.
-    if (typeof inserirRodape === 'function') {
-      inserirRodape('app-footer', false);
-    }
+    if (typeof inserirRodape === 'function') { inserirRodape('app-footer', false); }
 
     const token = localStorage.getItem('sigesc_token');
-    if (!token) {
-      window.location.href = '/login.html';
+    if (!token) { window.location.href = '/login.html'; }
+
+    let cicloAtualId = null;
+    let pollingTimer = null;
+
+    async function apiFetch(path) {
+      const resp = await fetch(path, { headers: { Authorization: 'Bearer ' + token } });
+      if (resp.status === 401) { localStorage.removeItem('sigesc_token'); window.location.href = '/login.html'; throw new Error('Sessão expirada'); }
+      const data = await resp.json();
+      if (!resp.ok) throw new Error(data.erro || 'Erro na requisição');
+      return data;
     }
 
-    // Valida a sessão de verdade contra a API (não confia só no que está no localStorage).
+    function corFaixa(scoreGeral) {
+      const v = Number(scoreGeral);
+      if (v >= 8.5) return '#22C55E';
+      if (v >= 7) return '#2563EB';
+      if (v >= 5) return '#F59E0B';
+      return '#EF4444';
+    }
+    function badgeFaixa(scoreGeral) {
+      const v = Number(scoreGeral);
+      if (v >= 8.5) return '<span class="badge badge-excelente">Excelente</span>';
+      if (v >= 7) return '<span class="badge badge-saudavel">Saudável</span>';
+      if (v >= 5) return '<span class="badge badge-atencao">Atenção</span>';
+      return '<span class="badge badge-critico">Crítico</span>';
+    }
+    function formatMes(anoMes) {
+      if (!anoMes) return '';
+      const [ano, mes] = anoMes.split('-');
+      const nomes = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+      return nomes[parseInt(mes, 10) - 1] + '/' + ano.slice(2);
+    }
+
+    async function carregarCiclos() {
+      const { ciclos } = await apiFetch('/api/ciclos');
+      const select = document.getElementById('select-ciclo');
+
+      if (ciclos.length === 0) {
+        document.getElementById('dashboard-vazio').style.display = 'block';
+        document.getElementById('dashboard-conteudo').style.display = 'none';
+        select.style.display = 'none';
+        document.getElementById('topbar-sub').textContent = 'Nenhum ciclo criado ainda';
+        return;
+      }
+
+      select.style.display = 'block';
+      select.innerHTML = ciclos.map(c => `<option value="${c.id}">${c.titulo} (${c.total_clientes} clientes)</option>`).join('');
+      cicloAtualId = ciclos[0].id;
+      select.value = cicloAtualId;
+      select.addEventListener('change', () => { cicloAtualId = select.value; carregarDashboard(); });
+
+      await carregarDashboard();
+      iniciarPolling();
+    }
+
+    function iniciarPolling() {
+      if (pollingTimer) clearInterval(pollingTimer);
+      pollingTimer = setInterval(() => carregarDashboard(true), 20000);
+    }
+
+    async function carregarDashboard(silencioso) {
+      try {
+        const data = await apiFetch(`/api/ciclos/${cicloAtualId}/dashboard`);
+        renderDashboard(data);
+      } catch (err) {
+        if (!silencioso) mostrarMensagem('Erro ao carregar dashboard: ' + err.message, 'error');
+      }
+    }
+
+    function mostrarMensagem(texto, tipo) {
+      const area = document.getElementById('msg-area');
+      area.innerHTML = `<div class="alert-box alert-${tipo}" style="padding:12px 16px;border-radius:10px;font-size:13px;font-weight:600;margin-bottom:16px;background:${tipo === 'error' ? '#FEE2E2' : '#DCFCE7'};color:${tipo === 'error' ? '#B91C1C' : '#15803D'};">${texto}</div>`;
+      setTimeout(() => { area.innerHTML = ''; }, 5000);
+    }
+
+    function renderDashboard(data) {
+      document.getElementById('dashboard-vazio').style.display = data.kpis ? 'none' : 'block';
+      document.getElementById('dashboard-conteudo').style.display = data.kpis ? 'block' : 'none';
+      document.getElementById('topbar-sub').textContent = data.ciclo.titulo + (data.kpis ? ` · ${formatMes(data.kpis.anoMes)}` : '');
+      if (!data.kpis) return;
+
+      renderKpis(data.kpis);
+      renderEvolucao(data.evolucaoMensal);
+      renderDonut(data.distribuicaoSaude);
+      renderRanking(data.ranking);
+      renderPerfil(data.perfilRespondentes);
+      renderUltimasRespostas(data.ultimasRespostas);
+    }
+
+    function renderKpis(kpis) {
+      const itens = [
+        ['ISC Geral', kpis.isc],
+        ['ISA · Atendimento', kpis.isa],
+        ['ISE · Infraestrutura', kpis.ise],
+        ['IST · Tecnologia', kpis.ist],
+        ['ISV · Valor Percebido', kpis.isv],
+      ];
+      document.getElementById('kpi-grid').innerHTML = itens.map(([label, val]) => `
+        <div class="kpi-card">
+          <div class="kpi-top"><span class="kpi-label">${label}</span>${badgeFaixa(val)}</div>
+          <div class="kpi-val">${Number(val).toFixed(1).replace('.', ',')}</div>
+        </div>
+      `).join('');
+    }
+
+    function renderEvolucao(evolucao) {
+      document.getElementById('evolucao-periodo').textContent = evolucao.length ? `${formatMes(evolucao[0].ano_mes)} – ${formatMes(evolucao[evolucao.length - 1].ano_mes)}` : '';
+      const svg = document.getElementById('chart-evolucao');
+      const labels = document.getElementById('chart-evolucao-labels');
+
+      if (evolucao.length === 0) { svg.innerHTML = ''; labels.innerHTML = ''; return; }
+
+      const w = 600, h = 200, pad = 10;
+      const max = 10;
+      const pontos = evolucao.map((e, i) => {
+        const x = evolucao.length === 1 ? w / 2 : pad + (i / (evolucao.length - 1)) * (w - pad * 2);
+        const y = h - pad - (Number(e.isc) / max) * (h - pad * 2);
+        return `${x},${y}`;
+      });
+
+      svg.innerHTML = `
+        <line x1="0" y1="${h * 0.25}" x2="${w}" y2="${h * 0.25}" stroke="#F1F5F9" stroke-width="1"/>
+        <line x1="0" y1="${h * 0.5}" x2="${w}" y2="${h * 0.5}" stroke="#F1F5F9" stroke-width="1"/>
+        <line x1="0" y1="${h * 0.75}" x2="${w}" y2="${h * 0.75}" stroke="#F1F5F9" stroke-width="1"/>
+        <polyline points="${pontos.join(' ')}" fill="none" stroke="#2563EB" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+        ${pontos.map(p => `<circle cx="${p.split(',')[0]}" cy="${p.split(',')[1]}" r="4" fill="#2563EB"/>`).join('')}
+      `;
+      labels.innerHTML = evolucao.map(e => `<span>${formatMes(e.ano_mes)}</span>`).join('');
+    }
+
+    function renderDonut(distribuicaoSaude) {
+      const d = distribuicaoSaude.distribuicao;
+      const total = distribuicaoSaude.total || 1;
+      const cores = { excelente: '#22C55E', saudavel: '#2563EB', atencao: '#F59E0B', critico: '#EF4444' };
+      const labels = { excelente: 'Excelente', saudavel: 'Saudável', atencao: 'Atenção', critico: 'Crítico' };
+      const circunferencia = 2 * Math.PI * 70;
+
+      let offset = 0;
+      let circles = '';
+      Object.entries(d).forEach(([faixa, qtd]) => {
+        const frac = qtd / total;
+        const tamanho = frac * circunferencia;
+        circles += `<circle cx="100" cy="100" r="70" fill="none" stroke="${cores[faixa]}" stroke-width="28" stroke-dasharray="${tamanho} ${circunferencia - tamanho}" stroke-dashoffset="${-offset}" transform="rotate(-90 100 100)"/>`;
+        offset += tamanho;
+      });
+
+      document.getElementById('chart-donut').innerHTML = `
+        ${circles}
+        <text x="100" y="96" text-anchor="middle" font-size="26" font-weight="800" fill="#0D1B2A">${distribuicaoSaude.total}</text>
+        <text x="100" y="116" text-anchor="middle" font-size="10" fill="#64748B">clientes</text>
+      `;
+
+      document.getElementById('donut-legend').innerHTML = Object.entries(d).map(([faixa, qtd]) => `
+        <div style="display:flex;justify-content:space-between;align-items:center;font-size:12px;margin-bottom:6px;">
+          <span style="display:flex;align-items:center;gap:6px;"><span style="width:9px;height:9px;border-radius:50%;background:${cores[faixa]};display:inline-block;"></span>${labels[faixa]}</span>
+          <strong>${qtd}</strong>
+        </div>
+      `).join('');
+    }
+
+    function renderRanking(ranking) {
+      if (ranking.length === 0) {
+        document.getElementById('ranking-list').innerHTML = '<p style="color:var(--cinza-medio);font-size:12.5px;">Nenhum cliente com resposta ainda.</p>';
+        return;
+      }
+      document.getElementById('ranking-list').innerHTML = ranking.map((r, i) => {
+        const cor = corFaixa(r.score_geral);
+        const pct = Math.min(100, (Number(r.score_geral) / 10) * 100);
+        return `
+          <div class="rank-row">
+            <div class="rank-pos" style="background:${cor};">${i + 1}</div>
+            <div class="rank-info">
+              <div class="rank-name">${r.nome_cliente}</div>
+              <div class="rank-empresa">${r.empresa_nome}</div>
+            </div>
+            <div class="rank-track"><div class="rank-fill" style="width:${pct}%;background:${cor};"></div></div>
+            <div class="rank-score" style="color:${cor};">${Number(r.score_geral).toFixed(1).replace('.', ',')}</div>
+          </div>`;
+      }).join('');
+    }
+
+    function renderPerfil(perfilRespondentes) {
+      if (perfilRespondentes.length === 0) {
+        document.getElementById('perfil-list').innerHTML = '<p style="color:var(--cinza-medio);font-size:12.5px;">Sem dados de perfil ainda.</p>';
+        return;
+      }
+      document.getElementById('perfil-list').innerHTML = perfilRespondentes.map(p => `
+        <div class="perfil-row">
+          <div class="perfil-top"><span>${p.perfil}</span><strong>${p.percentual}%</strong></div>
+          <div class="perfil-track"><div class="perfil-fill" style="width:${p.percentual}%;"></div></div>
+        </div>
+      `).join('');
+    }
+
+    function renderUltimasRespostas(respostas) {
+      const tbody = document.getElementById('ultimas-respostas-rows');
+      if (respostas.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4" class="table-empty">Nenhuma resposta recebida ainda.</td></tr>';
+        return;
+      }
+      tbody.innerHTML = respostas.map(r => `
+        <tr>
+          <td class="col-titulo">${r.nome_cliente}</td>
+          <td data-label="Empresa" class="col-empresa">${r.empresa_nome}</td>
+          <td data-label="Score">${r.score_geral ? Number(r.score_geral).toFixed(1).replace('.', ',') + ' ' + badgeFaixa(r.score_geral) : '—'}</td>
+          <td data-label="Recebida em" class="col-num">${new Date(r.respondido_em).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', dateStyle: 'short', timeStyle: 'short' })}</td>
+        </tr>
+      `).join('');
+    }
+
     (async () => {
       try {
-        const resp = await fetch('/api/auth/me', {
-          headers: { Authorization: 'Bearer ' + token },
-        });
-        if (!resp.ok) {
-          localStorage.removeItem('sigesc_token');
-          localStorage.removeItem('sigesc_usuario');
-          window.location.href = '/login.html';
-          return;
-        }
+        const resp = await fetch('/api/auth/me', { headers: { Authorization: 'Bearer ' + token } });
+        if (!resp.ok) { localStorage.removeItem('sigesc_token'); window.location.href = '/login.html'; return; }
         const data = await resp.json();
-        const usuario = data.usuario;
+        document.getElementById('side-role-name').textContent = data.usuario.nome;
+        document.getElementById('side-role-tag').textContent = data.usuario.perfil === 'gestor' ? 'Gestor' : 'Usuário';
+      } catch (err) { window.location.href = '/login.html'; return; }
 
-        document.getElementById('side-role-name').textContent = usuario.nome;
-        document.getElementById('side-role-tag').textContent = usuario.perfil === 'gestor' ? 'Gestor' : 'Usuário';
-        document.getElementById('nome-usuario').textContent = usuario.nome;
+      try {
+        await carregarCiclos();
       } catch (err) {
-        localStorage.removeItem('sigesc_token');
-        window.location.href = '/login.html';
+        mostrarMensagem('Erro ao carregar ciclos: ' + err.message, 'error');
       }
     })();
 
     document.getElementById('btn-logout').addEventListener('click', () => {
       localStorage.removeItem('sigesc_token');
-      localStorage.removeItem('sigesc_usuario');
       window.location.href = '/login.html';
     });
 
-    // ---------- Menu sanduíche (mobile): sobrepõe a tela, não empurra o conteúdo ----------
     const sidebar = document.getElementById('sidebar');
     const backdrop = document.getElementById('sidebar-backdrop');
-    const menuToggle = document.getElementById('menu-toggle');
-    const sidebarClose = document.getElementById('sidebar-close');
-
-    function abrirMenu() {
-      sidebar.classList.add('open');
-      backdrop.classList.add('open');
-    }
-    function fecharMenu() {
-      sidebar.classList.remove('open');
-      backdrop.classList.remove('open');
-    }
-
-    menuToggle.addEventListener('click', abrirMenu);
-    sidebarClose.addEventListener('click', fecharMenu);
-    backdrop.addEventListener('click', fecharMenu);
-
-    // Se a pessoa girar o celular pra paisagem/desktop, o menu fecha sozinho
-    // (evita ficar "aberto" preso quando a sidebar já é fixa na tela grande).
-    window.addEventListener('resize', () => {
-      if (window.innerWidth > 900) fecharMenu();
-    });
+    document.getElementById('menu-toggle').addEventListener('click', () => { sidebar.classList.add('open'); backdrop.classList.add('open'); });
+    document.getElementById('sidebar-close').addEventListener('click', () => { sidebar.classList.remove('open'); backdrop.classList.remove('open'); });
+    backdrop.addEventListener('click', () => { sidebar.classList.remove('open'); backdrop.classList.remove('open'); });
+    window.addEventListener('resize', () => { if (window.innerWidth > 900) { sidebar.classList.remove('open'); backdrop.classList.remove('open'); } });
   </script>
 </body>
 </html>

@@ -71,6 +71,7 @@ Organização (whitelabel)
 - **Recusa de LGPD é sempre registrada**, mesmo sem resposta completa — é a única gravação que existe quando a pessoa não concorda com a política.
 - **Motor de cálculo**: ISA/ISE/IST/ISV/Score Geral calculados automaticamente a cada resposta concluída, dentro da mesma transação da gravação. O indicador mensal (`indicadores_mensais`) é sempre **recalculado do zero como média de todas as respostas do mês** — nunca um cálculo incremental que possa acumular erro de arredondamento.
 - **ISC é sempre no nível do Ciclo**, nunca da pesquisa isolada — soma todos os clientes de todas as pesquisas/empresas vinculadas àquele ciclo como uma fonte única de dados.
+- **Dashboard sempre consolidado** — sem filtro por empresa. O gestor escolhe qual Ciclo visualizar (se tiver mais de um), e a partir daí tudo é somado: ranking, distribuição de saúde, perfil de respondentes.
 - Um usuário pertence a exatamente um gestor. Não há perfil hierárquico acima do gestor na v1 (mas o schema já reserva o campo para isso no futuro).
 - Nenhum dado de pesquisa é enviado por e-mail pelo sistema — o link público é disparado manualmente pelo gestor via mala direta externa.
 
@@ -193,6 +194,10 @@ node tests/test_formulario_publico_frontend.js
 # Motor de cálculo (Sprint 4) — valida com valores conhecidos calculados manualmente
 # (ISA/ISE/IST/ISV/Score Geral por resposta, média mensal, consolidação de ISC no nível do Ciclo)
 node tests/test_sprint4_motor_calculo.js
+
+# Teste funcional do Dashboard (Sprint 5) — carrega a página real e confirma que
+# KPIs, ranking, donut, perfil e tabela de últimas respostas mostram os dados corretos
+node tests/test_dashboard_frontend.js
 ```
 
 Ambos assumem que o servidor já está rodando e que o seed do gestor inicial já foi executado.

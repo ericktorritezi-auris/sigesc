@@ -38,12 +38,25 @@ async function buscarPesquisaPublica(slug) {
     [pesquisa.id]
   );
 
+  // Marca/identidade visual da organização (whitelabel) — o formulário público
+  // mostra a logo do gestor/organização, não a marca genérica do SIGESC.
+  const { rows: orgRows } = await query(
+    `SELECT o.nome AS organizacao_nome, o.logo_url
+     FROM usuarios u
+     JOIN organizacoes o ON o.id = u.organizacao_id
+     WHERE u.id = $1`,
+    [pesquisa.gestor_id]
+  );
+  const organizacao = orgRows[0] || { organizacao_nome: null, logo_url: null };
+
   return {
     titulo: pesquisa.titulo,
     rotuloEntidade: pesquisa.rotulo_entidade,
     politicaPrivacidadeTexto: pesquisa.politica_privacidade_texto,
     blocos,
     clientes,
+    organizacaoNome: organizacao.organizacao_nome,
+    logoUrl: organizacao.logo_url,
   };
 }
 

@@ -181,10 +181,144 @@ async function buscarRankingClientesCiclo(cicloId, anoMes) {
   return { anoMes: anoMesFinal, ranking: rows };
 }
 
+/**
+ * Classifica um score geral na faixa de saúde padrão do SIGESC.
+ * Mesmos limiares usados em toda a experiência (demo, PDF executivo, etc).
+ */
+function faixaDeSaude(scoreGeral) {
+  const v = Number(scoreGeral);
+  if (v >= 8.5) return 'excelente';
+  if (v >= 7) return 'saudavel';
+  if (v >= 5) return 'atencao';
+  return 'critico';
+}
+
+/**
+ * Distribuição da carteira do Ciclo por faixa de saúde, num mês específico
+ * (ou no mês mais recente disponível, se não informado).
+ */
+async function buscarDistribuicaoSaude(cicloId, anoMes) {
+  const anoMesFinal = anoMes || (await buscarUltimoAnoMesCiclo(cicloId));
+  if (!anoMesFinal) return { anoMes: null, distribuicao: { excelente: 0, saudavel: 0, atencao: 0, critico: 0 } };
+
+  const { rows } = await query(
+    `SELECT im.score_geral
+     FROM indicadores_mensais im
+     JOIN pesquisa_clientes pc ON pc.id = im.pesquisa_cliente_id
+     JOIN pesquisas p ON p.id = pc.pesquisa_id
+     WHERE p.ciclo_id = $1 AND im.ano_mes = $2`,
+    [cicloId, anoMesFinal]
+  );
+
+  const distribuicao = { excelente: 0, saudavel: 0, atencao: 0, critico: 0 };
+  rows.forEach((r) => { distribuicao[faixaDeSaude(r.score_geral)]++; });
+
+  return { anoMes: anoMesFinal, distribuicao, total: rows.length };
+}
+
+async function buscarUltimoAnoMesCiclo(cicloId) {
+  const { rows } = await query(
+    `SELECT MAX(im.ano_mes) AS ultimo FROM indicadores_mensais im
+     JOIN pesquisa_clientes pc ON pc.id = im.pesquisa_cliente_id
+     JOIN pesquisas p ON p.id = pc.pesquisa_id
+     WHERE p.ciclo_id = $1`,
+    [cicloId]
+  );
+  return rows[0].ultimo;
+}
+
+/**
+ * Perfil dos respondentes do Ciclo — % por perfil (Gestor/Secretário/etc),
+ * consolidado entre todas as empresas/pesquisas do ciclo.
+ */
+async function buscarPerfilRespondentes(cicloId) {
+  const { rows } = await query(
+    `SELECT ri.valor_texto AS perfil, COUNT(*) AS qtd
+     FROM respostas_itens ri
+     JOIN pesquisa_perguntas pp ON pp.id = ri.pergunta_id
+     JOIN pesquisa_blocos pb ON pb.id = pp.bloco_id
+     JOIN respostas r ON r.id = ri.resposta_id
+     JOIN pesquisas p ON p.id = r.pesquisa_id
+     WHERE p.ciclo_id = $1 AND pb.tipo_bloco = 'identificacao' AND pp.tipo = 'multipla_escolha' AND r.concluida = true
+     GROUP BY ri.valor_texto
+     ORDER BY qtd DESC`,
+    [cicloId]
+  );
+  const total = rows.reduce((acc, r) => acc + Number(r.qtd), 0);
+  return rows.map((r) => ({ perfil: r.perfil, qtd: Number(r.qtd), percentual: total ? Math.round((Number(r.qtd) / total) * 100) : 0 }));
+}
+
+/**
+ * Últimas respostas recebidas em todo o Ciclo (todas as empresas juntas),
+ * mais recente primeiro.
+ */
+async function buscarUltimasRespostas(cicloId, limit = 10) {
+  const { rows } = await query(
+    `SELECT r.id, r.nome_completo, r.cargo, r.respondido_em, pc.nome_cliente, e.nome AS empresa_nome, sc.score_geral
+     FROM respostas r
+     JOIN pesquisa_clientes pc ON pc.id = r.pesquisa_cliente_id
+     JOIN pesquisas p ON p.id = r.pesquisa_id
+     JOIN empresas e ON e.id = p.empresa_id
+     LEFT JOIN scores_calculados sc ON sc.resposta_id = r.id
+     WHERE p.ciclo_id = $1 AND r.concluida = true
+     ORDER BY r.respondido_em DESC
+     LIMIT $2`,
+    [cicloId, limit]
+  );
+  return rows;
+}
+
+/**
+ * Histórico mensal de UM cliente específico (drill-down a partir do ranking).
+ */
+async function buscarHistoricoCliente(pesquisaClienteId) {
+  const { rows } = await query(
+    `SELECT ano_mes, isa, ise, ist, isv, score_geral, qtd_respostas
+     FROM indicadores_mensais
+     WHERE pesquisa_cliente_id = $1
+     ORDER BY ano_mes ASC`,
+    [pesquisaClienteId]
+  );
+  return rows;
+}
+
+/**
+ * Endpoint consolidado do dashboard — busca tudo que a tela precisa numa
+ * chamada só (KPIs vêm do último mês da própria evolução, sem query extra).
+ */
+async function buscarDashboardCiclo(cicloId) {
+  const evolucao = await buscarEvolucaoCiclo(cicloId);
+  const ultimoMes = evolucao[evolucao.length - 1] || null;
+
+  const [distribuicaoSaude, perfilRespondentes, ultimasRespostas, ranking] = await Promise.all([
+    buscarDistribuicaoSaude(cicloId, ultimoMes?.ano_mes),
+    buscarPerfilRespondentes(cicloId),
+    buscarUltimasRespostas(cicloId, 10),
+    buscarRankingClientesCiclo(cicloId, ultimoMes?.ano_mes),
+  ]);
+
+  return {
+    kpis: ultimoMes
+      ? { anoMes: ultimoMes.ano_mes, isc: ultimoMes.isc, isa: ultimoMes.isa, ise: ultimoMes.ise, ist: ultimoMes.ist, isv: ultimoMes.isv }
+      : null,
+    evolucaoMensal: evolucao,
+    distribuicaoSaude,
+    perfilRespondentes,
+    ultimasRespostas,
+    ranking: ranking.ranking,
+  };
+}
+
 module.exports = {
   calcularScoresResposta,
   atualizarIndicadorMensal,
   processarResposta,
   buscarEvolucaoCiclo,
   buscarRankingClientesCiclo,
+  buscarDistribuicaoSaude,
+  buscarPerfilRespondentes,
+  buscarUltimasRespostas,
+  buscarHistoricoCliente,
+  buscarDashboardCiclo,
+  faixaDeSaude,
 };

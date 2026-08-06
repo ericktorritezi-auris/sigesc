@@ -261,7 +261,15 @@
             <button class="btn btn-primary" style="padding:9px 16px;font-size:12.5px;" onclick="adicionarCliente()">Adicionar</button>
           </div>`;
       } else {
-        const indicadorLabel = bloco.indicador_gerado ? ` → gera ${bloco.indicador_gerado} (peso ${(bloco.peso_no_score * 100).toFixed(0)}%)` : '';
+        const NOME_INDICADOR = {
+          ISA: 'Índice de Saúde do Atendimento',
+          ISE: 'Índice de Saúde da Infraestrutura e Estabilidade',
+          IST: 'Índice de Saúde da Tecnologia',
+          ISV: 'Índice de Valor Percebido',
+        };
+        const indicadorLabel = bloco.indicador_gerado
+          ? ` → gera ${bloco.indicador_gerado} — ${NOME_INDICADOR[bloco.indicador_gerado]} (peso ${(bloco.peso_no_score * 100).toFixed(0)}%)`
+          : '';
         html += `<h3 style="font-size:16px;margin-bottom:6px;">Bloco ${stepAtual + 1} · ${STEP_LABELS[stepAtual]}<span style="font-weight:500;font-size:12px;color:var(--cinza-medio);">${indicadorLabel}</span></h3>`;
 
         if (bloco.limite_fechadas > 0) {
