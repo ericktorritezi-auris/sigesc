@@ -1,11 +1,12 @@
 const express = require('express');
-const empresaController = require('../controllers/empresa.controller');
+const lgpdController = require('../controllers/lgpd.controller');
 const { autenticar, bloquearAdministrador } = require('../middlewares/auth.middleware');
 
 const router = express.Router();
 
 router.use(autenticar, bloquearAdministrador);
-router.get('/', empresaController.getEmpresas);
-router.post('/', empresaController.postEmpresa);
+
+router.get('/', lgpdController.getConsentimentos);
+router.get('/:id', lgpdController.getConsentimentoDetalhe);
 
 module.exports = router;

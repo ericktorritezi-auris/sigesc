@@ -1,10 +1,10 @@
 const express = require('express');
 const cicloController = require('../controllers/ciclo.controller');
-const { autenticar } = require('../middlewares/auth.middleware');
+const { autenticar, bloquearAdministrador } = require('../middlewares/auth.middleware');
 
 const router = express.Router();
 
-router.use(autenticar);
+router.use(autenticar, bloquearAdministrador);
 
 router.get('/', cicloController.getCiclos);
 router.get('/:id/dashboard', cicloController.getDashboard);

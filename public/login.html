@@ -62,7 +62,8 @@
 
     // Se já existe um token válido guardado, pula direto para o app.
     if (localStorage.getItem('sigesc_token')) {
-      window.location.href = '/app/index.html';
+      const usuarioSalvo = JSON.parse(localStorage.getItem('sigesc_usuario') || '{}');
+      window.location.href = usuarioSalvo.perfil === 'administrador' ? '/app/admin.html' : '/app/index.html';
     }
 
     form.addEventListener('submit', async (e) => {
@@ -92,7 +93,7 @@
 
         localStorage.setItem('sigesc_token', data.token);
         localStorage.setItem('sigesc_usuario', JSON.stringify(data.usuario));
-        window.location.href = '/app/index.html';
+        window.location.href = data.usuario.perfil === 'administrador' ? '/app/admin.html' : '/app/index.html';
       } catch (err) {
         errorBox.textContent = 'Erro de conexão com o servidor. Tente novamente em instantes.';
         errorBox.classList.add('active');

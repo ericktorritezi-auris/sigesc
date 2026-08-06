@@ -40,14 +40,18 @@ async function buscarPesquisaPublica(slug) {
 
   // Marca/identidade visual da organização (whitelabel) — o formulário público
   // mostra a logo do gestor/organização, não a marca genérica do SIGESC.
+  // Também é aqui que os toggles de Configurações (IA/reCAPTCHA) chegam até
+  // o formulário público — sem isso, o toggle da tela não teria efeito real.
   const { rows: orgRows } = await query(
-    `SELECT o.nome AS organizacao_nome, o.logo_url
+    `SELECT o.nome AS organizacao_nome, o.logo_url, o.recaptcha_habilitado, o.ia_analise_habilitada
      FROM usuarios u
      JOIN organizacoes o ON o.id = u.organizacao_id
      WHERE u.id = $1`,
     [pesquisa.gestor_id]
   );
-  const organizacao = orgRows[0] || { organizacao_nome: null, logo_url: null };
+  const organizacao = orgRows[0] || { organizacao_nome: null, logo_url: null, recaptcha_habilitado: true, ia_analise_habilitada: true };
+
+  const recaptchaHabilitado = Boolean(organizacao.recaptcha_habilitado) && Boolean(process.env.RECAPTCHA_SECRET_KEY);
 
   return {
     titulo: pesquisa.titulo,
@@ -57,7 +61,24 @@ async function buscarPesquisaPublica(slug) {
     clientes,
     organizacaoNome: organizacao.organizacao_nome,
     logoUrl: organizacao.logo_url,
+    recaptchaHabilitado,
+    recaptchaSiteKey: recaptchaHabilitado ? process.env.RECAPTCHA_SITE_KEY : null,
   };
+}
+
+/**
+ * Usado pelo controller antes de validar o reCAPTCHA no envio — precisa
+ * saber se a ORGANIZAÇÃO daquela pesquisa específica tem o toggle ligado
+ * (Sprint 6 · Configurações), não só se a variável de ambiente existe.
+ */
+async function pesquisaExigeRecaptcha(slug) {
+  const pesquisa = await carregarPesquisaAtivaPorSlug(slug);
+  const { rows } = await query(
+    `SELECT o.recaptcha_habilitado FROM usuarios u JOIN organizacoes o ON o.id = u.organizacao_id WHERE u.id = $1`,
+    [pesquisa.gestor_id]
+  );
+  const habilitadoNaOrg = rows[0]?.recaptcha_habilitado ?? true;
+  return habilitadoNaOrg && Boolean(process.env.RECAPTCHA_SECRET_KEY);
 }
 
 async function registrarRecusa(slug, ipOrigem) {
@@ -170,4 +191,4 @@ async function registrarResposta(slug, payload, ipOrigem) {
   }
 }
 
-module.exports = { buscarPesquisaPublica, registrarRecusa, registrarResposta, AppError };
+module.exports = { buscarPesquisaPublica, registrarRecusa, registrarResposta, pesquisaExigeRecaptcha, AppError };

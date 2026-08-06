@@ -41,9 +41,12 @@ async function postRecusa(req, res, next) {
 
 async function postResposta(req, res, next) {
   try {
-    const recaptcha = await verificarRecaptcha(req.body.recaptchaToken);
-    if (!recaptcha.sucesso) {
-      return res.status(400).json({ erro: 'Falha na verificação de segurança (reCAPTCHA). Tente novamente.' });
+    const exigeRecaptcha = await publicoService.pesquisaExigeRecaptcha(req.params.slug);
+    if (exigeRecaptcha) {
+      const recaptcha = await verificarRecaptcha(req.body.recaptchaToken);
+      if (!recaptcha.sucesso) {
+        return res.status(400).json({ erro: 'Falha na verificação de segurança (reCAPTCHA). Tente novamente.' });
+      }
     }
     const resultado = await publicoService.registrarResposta(req.params.slug, req.body, obterIp(req));
     res.status(201).json(resultado);

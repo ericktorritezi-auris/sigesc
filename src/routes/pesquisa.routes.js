@@ -1,10 +1,10 @@
 const express = require('express');
 const pesquisaController = require('../controllers/pesquisa.controller');
-const { autenticar } = require('../middlewares/auth.middleware');
+const { autenticar, bloquearAdministrador } = require('../middlewares/auth.middleware');
 
 const router = express.Router();
 
-router.use(autenticar);
+router.use(autenticar, bloquearAdministrador);
 
 router.post('/', pesquisaController.postPesquisa);
 router.get('/', pesquisaController.getPesquisas);

@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SIGESC — LGPD</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/style.css">
+<link rel="manifest" href="/manifest.json">
+<link rel="icon" type="image/x-icon" href="/favicon.ico">
+<link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-touch-icon.png">
+<meta name="theme-color" content="#0D1B2A">
+</head>
+<body data-app-version="1.0">
+  <div class="app-shell">
+    <div class="sidebar-backdrop" id="sidebar-backdrop"></div>
+    <div class="sidebar" id="sidebar">
+      <button class="sidebar-close" id="sidebar-close" aria-label="Fechar menu">✕</button>
+      <div class="brand">
+        <svg viewBox="0 0 40 40" width="26" height="26" fill="none"><circle cx="20" cy="20" r="19" stroke="#00B4A6" stroke-width="2.2"/><path d="M9 22 L14 22 L16.5 17 L19 26 L21.5 19 L24 22 L31 22" stroke="#00B4A6" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span class="brand-text">SIGESC</span>
+      </div>
+      <div class="side-role"><div class="name" id="side-role-name">—</div><span class="tag-role" id="side-role-tag">—</span></div>
+      <div class="side-nav">
+        <a href="/app/index.html">📊 Dashboard</a>
+        <a href="/app/pesquisas.html">📋 Pesquisas</a>
+        <a href="/app/respostas.html">💬 Respostas</a>
+        <button class="active">🛡️ LGPD</button>
+        <a href="/app/usuarios.html">👥 Usuários</a>
+        <a href="/app/configuracoes.html">⚙️ Configurações</a>
+      </div>
+      <div class="side-foot"><button id="btn-logout">↩ Sair</button></div>
+    </div>
+
+    <div class="main">
+      <div class="topbar">
+        <div class="topbar-left">
+          <button class="menu-toggle" id="menu-toggle" aria-label="Abrir menu">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+          </button>
+          <div><h2>LGPD</h2><div class="sub">Log de consentimento — todo aceite ou recusa fica registrado</div></div>
+        </div>
+      </div>
+
+      <div class="content">
+        <div id="msg-area"></div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Nome completo</th><th>Cliente</th><th>Pesquisa</th><th>Aceite</th><th>Data/Hora</th><th></th></tr></thead>
+            <tbody id="rows"><tr><td colspan="6" class="table-empty">Carregando...</td></tr></tbody>
+          </table>
+          <div class="pagination"><span id="pag-label"></span><div class="page-btns" id="pag-btns"></div></div>
+        </div>
+        <div id="app-footer"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="overlay" id="modal-detalhe">
+    <div class="panel" style="max-width:480px;">
+      <div class="panel-head"><h3 style="font-size:16px;">Registro de consentimento</h3><button class="panel-close" onclick="fecharModal()">✕</button></div>
+      <div class="panel-body" id="detalhe-body"></div>
+    </div>
+  </div>
+
+<style>
+  .overlay{position:fixed;inset:0;background:rgba(13,27,42,.5);display:none;align-items:center;justify-content:center;z-index:100;padding:20px;}
+  .overlay.active{display:flex;}
+  .panel{background:#fff;border-radius:16px;max-width:640px;width:100%;max-height:88vh;overflow-y:auto;}
+  .panel-head{padding:20px 24px;border-bottom:1px solid #EEF2F7;display:flex;justify-content:space-between;align-items:center;}
+  .panel-body{padding:20px 24px;}
+  .panel-close{width:30px;height:30px;border-radius:8px;background:var(--cinza-claro);color:var(--cinza-medio);}
+  .badge{font-size:10.5px;font-weight:700;padding:3px 10px;border-radius:20px;}
+  .badge-excelente{background:#DCFCE7;color:#15803D;}
+  .badge-critico{background:#FEE2E2;color:#B91C1C;}
+  .detalhe-row{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid #F1F5F9;font-size:13px;}
+  .detalhe-row strong{font-weight:600;}
+  .politica-box{background:var(--cinza-claro);border-radius:10px;padding:12px;font-size:12px;margin-top:14px;line-height:1.6;}
+  .alert-box{padding:12px 16px;border-radius:10px;font-size:13px;font-weight:600;margin-bottom:16px;}
+  .alert-error{background:#FEE2E2;color:#B91C1C;}
+</style>
+
+  <script src="/js/footer.js"></script>
+  <script src="/js/pwa.js"></script>
+  <script>
+    if (typeof inserirRodape === 'function') { inserirRodape('app-footer', false); }
+    const token = localStorage.getItem('sigesc_token');
+    if (!token) { window.location.href = '/login.html'; }
+    let paginaAtual = 1;
+
+    async function apiFetch(path, options = {}) {
+      const resp = await fetch(path, { ...options, headers: { Authorization: 'Bearer ' + token, ...(options.headers || {}) } });
+      if (resp.status === 401) { localStorage.removeItem('sigesc_token'); window.location.href = '/login.html'; throw new Error('Sessão expirada'); }
+      const data = await resp.json();
+      if (!resp.ok) throw new Error(data.erro || 'Erro na requisição');
+      return data;
+    }
+    function mostrarMensagem(texto, tipo) {
+      document.getElementById('msg-area').innerHTML = `<div class="alert-box alert-${tipo}">${texto}</div>`;
+    }
+
+    async function carregar(pagina = 1) {
+      paginaAtual = pagina;
+      try {
+        const data = await apiFetch(`/api/lgpd?page=${pagina}&limit=20`);
+        renderTabela(data);
+      } catch (err) { mostrarMensagem('Erro: ' + err.message, 'error'); }
+    }
+
+    function renderTabela(data) {
+      const tbody = document.getElementById('rows');
+      if (data.consentimentos.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" class="table-empty">Nenhum registro ainda.</td></tr>`;
+      } else {
+        tbody.innerHTML = data.consentimentos.map(c => `
+          <tr>
+            <td class="col-titulo">${c.nome_completo || '<span style="color:var(--cinza-medio);font-style:italic;">Não informado (recusou antes)</span>'}</td>
+            <td data-label="Cliente">${c.nome_cliente || '—'}</td>
+            <td data-label="Pesquisa">${c.pesquisa_titulo}</td>
+            <td data-label="Aceite">${c.aceitou ? '<span class="badge badge-excelente">✓ Aceitou</span>' : '<span class="badge badge-critico">✕ Recusou</span>'}</td>
+            <td data-label="Data/Hora">${new Date(c.respondido_em).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', dateStyle: 'short', timeStyle: 'short' })}</td>
+            <td class="row-actions"><button onclick="abrirDetalhe('${c.id}')">Ver registro</button></td>
+          </tr>
+        `).join('');
+      }
+      document.getElementById('pag-label').textContent = `Mostrando ${data.consentimentos.length} de ${data.total}`;
+      const btns = document.getElementById('pag-btns');
+      btns.innerHTML = '';
+      for (let i = 1; i <= data.totalPaginas; i++) {
+        const b = document.createElement('button');
+        b.textContent = i;
+        if (i === data.page) b.classList.add('active');
+        b.onclick = () => carregar(i);
+        btns.appendChild(b);
+      }
+    }
+
+    async function abrirDetalhe(id) {
+      try {
+        const { consentimento: c } = await apiFetch(`/api/lgpd/${id}`);
+        document.getElementById('detalhe-body').innerHTML = `
+          <div class="detalhe-row"><span>Nome completo</span><strong>${c.nome_completo || 'Não informado'}</strong></div>
+          <div class="detalhe-row"><span>E-mail</span><strong>${c.email || 'Não informado'}</strong></div>
+          <div class="detalhe-row"><span>Cliente</span><strong>${c.nome_cliente || '—'}</strong></div>
+          <div class="detalhe-row"><span>Pesquisa</span><strong>${c.pesquisa_titulo}</strong></div>
+          <div class="detalhe-row"><span>Aceite</span><strong>${c.aceitou ? '✓ Aceitou' : '✕ Recusou'}</strong></div>
+          <div class="detalhe-row"><span>Data/Hora</span><strong>${new Date(c.respondido_em).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' })} (Brasília)</strong></div>
+          <div class="detalhe-row"><span>IP de origem</span><strong>${c.ip_origem || '—'}</strong></div>
+          <div class="politica-box"><strong>Texto exato da política apresentada:</strong><br>${c.politica_versao_texto}</div>
+        `;
+        document.getElementById('modal-detalhe').classList.add('active');
+      } catch (err) { mostrarMensagem('Erro: ' + err.message, 'error'); }
+    }
+    function fecharModal() { document.getElementById('modal-detalhe').classList.remove('active'); }
+
+    (async () => {
+      try {
+        const resp = await fetch('/api/auth/me', { headers: { Authorization: 'Bearer ' + token } });
+        if (!resp.ok) { localStorage.removeItem('sigesc_token'); window.location.href = '/login.html'; return; }
+        const data = await resp.json();
+        if (data.usuario.perfil === 'administrador') { window.location.href = '/app/admin.html'; return; }
+        document.getElementById('side-role-name').textContent = data.usuario.nome;
+        document.getElementById('side-role-tag').textContent = data.usuario.perfil === 'gestor' ? 'Gestor' : 'Usuário';
+      } catch (err) { window.location.href = '/login.html'; return; }
+      carregar(1);
+    })();
+
+    document.getElementById('btn-logout').addEventListener('click', () => { localStorage.removeItem('sigesc_token'); window.location.href = '/login.html'; });
+    const sidebar = document.getElementById('sidebar');
+    const backdrop = document.getElementById('sidebar-backdrop');
+    document.getElementById('menu-toggle').addEventListener('click', () => { sidebar.classList.add('open'); backdrop.classList.add('open'); });
+    document.getElementById('sidebar-close').addEventListener('click', () => { sidebar.classList.remove('open'); backdrop.classList.remove('open'); });
+    backdrop.addEventListener('click', () => { sidebar.classList.remove('open'); backdrop.classList.remove('open'); });
+    window.addEventListener('resize', () => { if (window.innerWidth > 900) { sidebar.classList.remove('open'); backdrop.classList.remove('open'); } });
+  </script>
+</body>
+</html>

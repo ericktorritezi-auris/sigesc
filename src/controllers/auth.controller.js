@@ -15,6 +15,13 @@ async function postLogin(req, res, next) {
 
 async function getMe(req, res, next) {
   try {
+    // Administrador não é uma linha em `usuarios` — seus dados vêm direto do token.
+    if (req.usuario.perfil === 'administrador') {
+      return res.status(200).json({
+        usuario: { id: null, nome: 'Administrador SIGESC', email: process.env.ADMIN_EMAIL, perfil: 'administrador' },
+      });
+    }
+
     const usuario = await authService.buscarUsuarioPorId(req.usuario.id);
     if (!usuario) {
       return res.status(404).json({ erro: 'Usuário não encontrado.' });

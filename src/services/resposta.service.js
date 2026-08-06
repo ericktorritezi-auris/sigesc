@@ -1,0 +1,86 @@
+const { query } = require('../config/db');
+const { gestorEfetivoId } = require('./empresa.service');
+
+class AppError extends Error {
+  constructor(message, status = 400) {
+    super(message);
+    this.status = status;
+  }
+}
+
+async function listarRespostas(usuarioAutenticado, { page = 1, limit = 20, cicloId, pesquisaId, clienteId, de, ate }) {
+  const gestorId = gestorEfetivoId(usuarioAutenticado);
+  const offset = (page - 1) * limit;
+
+  const condicoes = ['p.gestor_id = $1', 'r.concluida = true'];
+  const params = [gestorId];
+
+  if (cicloId) { params.push(cicloId); condicoes.push(`p.ciclo_id = $${params.length}`); }
+  if (pesquisaId) { params.push(pesquisaId); condicoes.push(`r.pesquisa_id = $${params.length}`); }
+  if (clienteId) { params.push(clienteId); condicoes.push(`r.pesquisa_cliente_id = $${params.length}`); }
+  if (de) { params.push(de); condicoes.push(`r.respondido_em >= $${params.length}`); }
+  if (ate) { params.push(ate); condicoes.push(`r.respondido_em <= $${params.length}`); }
+
+  const whereClause = condicoes.join(' AND ');
+
+  const { rows } = await query(
+    `SELECT r.id, r.nome_completo, r.cargo, r.respondido_em, r.ano_mes,
+            pc.nome_cliente, e.nome AS empresa_nome, p.titulo AS pesquisa_titulo,
+            sc.isa, sc.ise, sc.ist, sc.isv, sc.score_geral
+     FROM respostas r
+     JOIN pesquisas p ON p.id = r.pesquisa_id
+     JOIN pesquisa_clientes pc ON pc.id = r.pesquisa_cliente_id
+     JOIN empresas e ON e.id = p.empresa_id
+     LEFT JOIN scores_calculados sc ON sc.resposta_id = r.id
+     WHERE ${whereClause}
+     ORDER BY r.respondido_em DESC
+     LIMIT $${params.length + 1} OFFSET $${params.length + 2}`,
+    [...params, limit, offset]
+  );
+
+  const { rows: totalRows } = await query(
+    `SELECT COUNT(*) FROM respostas r JOIN pesquisas p ON p.id = r.pesquisa_id WHERE ${whereClause}`,
+    params
+  );
+  const total = parseInt(totalRows[0].count, 10);
+
+  return { respostas: rows, total, page, limit, totalPaginas: Math.ceil(total / limit) };
+}
+
+async function buscarDetalheResposta(usuarioAutenticado, respostaId) {
+  const gestorId = gestorEfetivoId(usuarioAutenticado);
+
+  const { rows } = await query(
+    `SELECT r.*, pc.nome_cliente, e.nome AS empresa_nome, p.titulo AS pesquisa_titulo,
+            sc.isa, sc.ise, sc.ist, sc.isv, sc.score_geral
+     FROM respostas r
+     JOIN pesquisas p ON p.id = r.pesquisa_id
+     JOIN pesquisa_clientes pc ON pc.id = r.pesquisa_cliente_id
+     JOIN empresas e ON e.id = p.empresa_id
+     LEFT JOIN scores_calculados sc ON sc.resposta_id = r.id
+     WHERE r.id = $1 AND p.gestor_id = $2`,
+    [respostaId, gestorId]
+  );
+
+  if (rows.length === 0) {
+    throw new AppError('Resposta não encontrada.', 404);
+  }
+  const resposta = rows[0];
+
+  const { rows: blocos } = await query('SELECT * FROM pesquisa_blocos WHERE pesquisa_id = $1 ORDER BY ordem ASC', [resposta.pesquisa_id]);
+  for (const bloco of blocos) {
+    const { rows: perguntas } = await query(
+      `SELECT pp.id, pp.texto, pp.tipo, pp.ordem, ri.valor_numerico, ri.valor_texto, ri.sentimento_ia
+       FROM pesquisa_perguntas pp
+       LEFT JOIN respostas_itens ri ON ri.pergunta_id = pp.id AND ri.resposta_id = $1
+       WHERE pp.bloco_id = $2
+       ORDER BY pp.ordem ASC`,
+      [respostaId, bloco.id]
+    );
+    bloco.perguntas = perguntas;
+  }
+
+  return { ...resposta, blocos };
+}
+
+module.exports = { listarRespostas, buscarDetalheResposta, AppError };

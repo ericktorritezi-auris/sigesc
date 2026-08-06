@@ -174,15 +174,12 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;}
     if (!slug) { mostrarErro('Link inválido.'); return; }
 
     try {
-      const configResp = await fetch(`${API}/config`);
-      const config = await configResp.json();
-      recaptchaSiteKey = config.recaptchaSiteKey;
-
       const resp = await fetch(`${API}/pesquisas/${slug}`);
       const data = await resp.json();
       if (!resp.ok) { mostrarErro(data.erro || 'Pesquisa não encontrada.'); return; }
 
       pesquisa = data.pesquisa;
+      recaptchaSiteKey = pesquisa.recaptchaHabilitado ? pesquisa.recaptchaSiteKey : null;
       document.getElementById('pf-titulo-pesquisa').textContent = pesquisa.titulo;
       document.title = pesquisa.titulo + ' — Pesquisa de Satisfação';
 

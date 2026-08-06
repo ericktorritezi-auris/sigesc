@@ -11,17 +11,33 @@ class AuthError extends Error {
 
 /**
  * Autentica um usuário por e-mail/senha.
- * Retorna { token, usuario } se sucesso, ou lança AuthError.
+ *
+ * O Administrador NUNCA é uma linha em `usuarios` — existe só como as
+ * variáveis de ambiente ADMIN_EMAIL/ADMIN_PASSWORD. Por isso é a primeira
+ * coisa verificada aqui: se bater, emite o token sem tocar no banco.
+ * Isso garante, por construção, que o Administrador é imune a qualquer
+ * reset do sistema — não há nada pra "preservar" durante a limpeza.
  */
 async function login(email, senha) {
   if (!email || !senha) {
     throw new AuthError('E-mail e senha são obrigatórios.', 400);
   }
 
+  const emailNormalizado = email.toLowerCase().trim();
+  const adminEmail = (process.env.ADMIN_EMAIL || '').toLowerCase().trim();
+
+  if (adminEmail && emailNormalizado === adminEmail && senha === process.env.ADMIN_PASSWORD) {
+    const token = gerarToken({ perfil: 'administrador' });
+    return {
+      token,
+      usuario: { id: null, nome: 'Administrador SIGESC', email: adminEmail, perfil: 'administrador', organizacaoId: null, gestorId: null },
+    };
+  }
+
   const { rows } = await query(
     `SELECT id, organizacao_id, nome, email, senha_hash, perfil, gestor_id, ativo
      FROM usuarios WHERE email = $1`,
-    [email.toLowerCase().trim()]
+    [emailNormalizado]
   );
 
   const usuario = rows[0];

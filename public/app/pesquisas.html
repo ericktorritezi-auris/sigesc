@@ -30,10 +30,10 @@
       <div class="side-nav">
         <a href="/app/index.html">📊 Dashboard</a>
         <button class="active">📋 Pesquisas</button>
-        <button disabled title="Disponível no Sprint 3" style="opacity:.4;cursor:not-allowed;">💬 Respostas</button>
-        <button disabled title="Disponível no Sprint 6" style="opacity:.4;cursor:not-allowed;">🛡️ LGPD</button>
-        <button disabled title="Disponível no Sprint 6" style="opacity:.4;cursor:not-allowed;">👥 Usuários</button>
-        <button disabled title="Disponível no Sprint 6" style="opacity:.4;cursor:not-allowed;">⚙️ Configurações</button>
+        <a href="/app/respostas.html">💬 Respostas</a>
+        <a href="/app/lgpd.html">🛡️ LGPD</a>
+        <a href="/app/usuarios.html">👥 Usuários</a>
+        <a href="/app/configuracoes.html">⚙️ Configurações</a>
       </div>
       <div class="side-foot">
         <button id="btn-logout">↩ Sair</button>
@@ -198,6 +198,7 @@
         if (!resp.ok) { localStorage.removeItem('sigesc_token'); window.location.href = '/login.html'; return; }
         const data = await resp.json();
         document.getElementById('side-role-name').textContent = data.usuario.nome;
+        if (data.usuario.perfil === 'administrador') { window.location.href = '/app/admin.html'; return; }
         document.getElementById('side-role-tag').textContent = data.usuario.perfil === 'gestor' ? 'Gestor' : 'Usuário';
       } catch (err) {
         window.location.href = '/login.html';

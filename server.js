@@ -12,6 +12,11 @@ const empresaRoutes = require('./src/routes/empresa.routes');
 const pesquisaRoutes = require('./src/routes/pesquisa.routes');
 const publicoRoutes = require('./src/routes/publico.routes');
 const cicloRoutes = require('./src/routes/ciclo.routes');
+const adminRoutes = require('./src/routes/admin.routes');
+const usuarioRoutes = require('./src/routes/usuario.routes');
+const respostaRoutes = require('./src/routes/resposta.routes');
+const lgpdRoutes = require('./src/routes/lgpd.routes');
+const configuracaoRoutes = require('./src/routes/configuracao.routes');
 const { errorHandler, notFoundHandler } = require('./src/middlewares/errorHandler');
 
 const app = express();
@@ -43,6 +48,11 @@ app.use('/api/empresas', empresaRoutes);
 app.use('/api/pesquisas', pesquisaRoutes);
 app.use('/api/publico', publicoRoutes);
 app.use('/api/ciclos', cicloRoutes);
+app.use('/api/admin', adminRoutes);
+app.use('/api/usuarios', usuarioRoutes);
+app.use('/api/respostas', respostaRoutes);
+app.use('/api/lgpd', lgpdRoutes);
+app.use('/api/configuracoes', configuracaoRoutes);
 
 // Link público amigável: /p/:slug serve a mesma página estática do formulário,
 // que descobre qual pesquisa mostrar lendo o slug direto da própria URL.
