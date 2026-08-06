@@ -70,6 +70,7 @@ Organização (whitelabel)
 - **Sem salvamento parcial no formulário público** — só existe gravação no banco quando a pessoa conclui os 7 blocos. Fechar no meio não deixa nenhum registro incompleto.
 - **Recusa de LGPD é sempre registrada**, mesmo sem resposta completa — é a única gravação que existe quando a pessoa não concorda com a política.
 - **Motor de cálculo**: ISA/ISE/IST/ISV/Score Geral calculados automaticamente a cada resposta concluída, dentro da mesma transação da gravação. O indicador mensal (`indicadores_mensais`) é sempre **recalculado do zero como média de todas as respostas do mês** — nunca um cálculo incremental que possa acumular erro de arredondamento.
+- **Auto-recuperação de dados órfãos**: se por qualquer motivo uma resposta ficar sem score calculado (ex: coletada antes do motor de cálculo existir), o sistema encontra e recalcula ela sozinho a cada deploy — sem precisar de nenhum comando manual.
 - **ISC é sempre no nível do Ciclo**, nunca da pesquisa isolada — soma todos os clientes de todas as pesquisas/empresas vinculadas àquele ciclo como uma fonte única de dados.
 - **Dashboard sempre consolidado** — sem filtro por empresa. O gestor escolhe qual Ciclo visualizar (se tiver mais de um), e a partir daí tudo é somado: ranking, distribuição de saúde, perfil de respondentes.
 - Um usuário pertence a exatamente um gestor. Não há perfil hierárquico acima do gestor na v1 (mas o schema já reserva o campo para isso no futuro).
@@ -159,7 +160,7 @@ O SIGESC pode ser instalado como aplicativo tanto no Android quanto no iPhone, d
 
 ## 🚀 Primeiro deploy — checklist
 
-O próprio sistema roda as migrations e o seed automaticamente a cada deploy (comando `npm start` já encadeia os três passos). **Você não precisa rodar nenhum comando manual no terminal do Railway ou no seu computador.**
+O próprio sistema roda as migrations, o seed e a auto-recuperação de dados automaticamente a cada deploy (comando `npm start` já encadeia os quatro passos). **Você não precisa rodar nenhum comando manual no terminal do Railway ou no seu computador.**
 
 1. Criar repositório no GitHub e conectar ao Railway
 2. Criar serviço PostgreSQL no Railway (gera `DATABASE_URL` automaticamente)
