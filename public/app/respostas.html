@@ -190,8 +190,19 @@
         resposta.blocos.forEach(b => {
           if (b.tipo_bloco === 'orientacoes') return; // consentimento já é mostrado no LGPD
           html += `<div class="block-section"><h4>${labelBloco[b.tipo_bloco] || b.tipo_bloco}</h4>`;
+
+          // Nome, E-mail e Cargo são campos dedicados da própria resposta (não
+          // ficam em respostas_itens) — mostrados aqui com o valor real, em
+          // vez de cair no loop genérico abaixo (que os veria como "não respondidos").
+          if (b.tipo_bloco === 'identificacao') {
+            html += `<div class="ans-row"><span>Nome completo</span><span class="a-val">${resposta.nome_completo}</span></div>`;
+            html += `<div class="ans-row"><span>E-mail</span><span class="a-val">${resposta.email}</span></div>`;
+            html += `<div class="ans-row"><span>Cargo</span><span class="a-val">${resposta.cargo}</span></div>`;
+          }
+
           b.perguntas.forEach(p => {
-            if (p.tipo === 'nome' || p.tipo === 'email' || p.tipo === 'selecao_cliente') return; // já no cabeçalho
+            if (p.tipo === 'nome' || p.tipo === 'email' || p.tipo === 'selecao_cliente') return; // já mostrados acima/no cabeçalho
+            if (b.tipo_bloco === 'identificacao' && p.tipo === 'texto_livre') return; // é o Cargo, já mostrado acima
             if (p.tipo === 'texto_livre') {
               html += `<div style="margin-bottom:8px;"><span style="font-size:12.5px;color:var(--cinza-escuro);">${p.texto}</span>
                 <div class="open-ans">${p.valor_texto ? '"' + p.valor_texto + '"' : '<span style="color:var(--cinza-medio);">Não respondida</span>'}</div></div>`;
