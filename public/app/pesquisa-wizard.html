@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SIGESC — Nova Pesquisa</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/style.css">
+<link rel="manifest" href="/manifest.json">
+<link rel="icon" type="image/x-icon" href="/favicon.ico">
+<link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-touch-icon.png">
+<meta name="theme-color" content="#0D1B2A">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="SIGESC">
+</head>
+<body data-app-version="1.0">
+  <div class="app-shell">
+    <div class="sidebar-backdrop" id="sidebar-backdrop"></div>
+    <div class="sidebar" id="sidebar">
+      <button class="sidebar-close" id="sidebar-close" aria-label="Fechar menu">✕</button>
+      <div class="brand">
+        <svg viewBox="0 0 40 40" width="26" height="26" fill="none"><circle cx="20" cy="20" r="19" stroke="#00B4A6" stroke-width="2.2"/><path d="M9 22 L14 22 L16.5 17 L19 26 L21.5 19 L24 22 L31 22" stroke="#00B4A6" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span class="brand-text">SIGESC</span>
+      </div>
+      <div class="side-role">
+        <div class="name" id="side-role-name">—</div>
+        <span class="tag-role" id="side-role-tag">—</span>
+      </div>
+      <div class="side-nav">
+        <a href="/app/index.html">📊 Dashboard</a>
+        <a href="/app/pesquisas.html" class="active">📋 Pesquisas</a>
+        <button disabled style="opacity:.4;cursor:not-allowed;">💬 Respostas</button>
+        <button disabled style="opacity:.4;cursor:not-allowed;">🛡️ LGPD</button>
+        <button disabled style="opacity:.4;cursor:not-allowed;">👥 Usuários</button>
+        <button disabled style="opacity:.4;cursor:not-allowed;">⚙️ Configurações</button>
+      </div>
+      <div class="side-foot"><button id="btn-logout">↩ Sair</button></div>
+    </div>
+
+    <div class="main">
+      <div class="topbar">
+        <div class="topbar-left">
+          <button class="menu-toggle" id="menu-toggle" aria-label="Abrir menu">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+          </button>
+          <div>
+            <h2 id="page-title">Nova pesquisa</h2>
+            <div class="sub">Estrutura fixa de 7 blocos — metodologia SIGESC</div>
+          </div>
+        </div>
+        <a href="/app/pesquisas.html" class="btn btn-outline-dark" style="padding:8px 14px;font-size:12.5px;">← Voltar</a>
+      </div>
+
+      <div class="content">
+        <div id="msg-area"></div>
+
+        <!-- ETAPA 0: escolher título + empresa (só quando ainda não existe pesquisa) -->
+        <div class="card" id="form-inicial" style="max-width:520px;">
+          <h3 style="font-size:16px;margin-bottom:16px;">Criar nova pesquisa</h3>
+          <div class="field"><label>Título da pesquisa</label><input type="text" id="input-titulo" placeholder="Ex: ISC 2026.08"></div>
+          <div class="field">
+            <label>Empresa</label>
+            <select id="select-empresa"></select>
+          </div>
+          <div class="field" id="campo-nova-empresa" style="display:none;">
+            <label>Nome da nova empresa</label>
+            <input type="text" id="input-nova-empresa" placeholder="Ex: SIGCORP">
+          </div>
+          <button class="btn btn-ghost-link" id="btn-toggle-nova-empresa" style="background:none;color:var(--azul-inteligente);padding:0;margin-bottom:16px;font-size:12.5px;">+ cadastrar nova empresa</button>
+          <div class="field"><label>Como você chama a entidade monitorada?</label><input type="text" id="input-rotulo" value="Cliente" placeholder="Ex: Município, Empresa..."></div>
+          <button class="btn btn-primary btn-block" id="btn-criar-pesquisa">Criar pesquisa e continuar →</button>
+        </div>
+
+        <!-- WIZARD: só aparece quando já existe uma pesquisa (id na URL) -->
+        <div id="wizard-area" style="display:none;">
+          <div class="stepper" id="stepper"></div>
+          <div class="card" id="wizard-body" style="max-width:820px;"></div>
+        </div>
+
+        <div id="app-footer"></div>
+      </div>
+    </div>
+  </div>
+
+<style>
+  .stepper{display:flex;margin-bottom:22px;background:#fff;border-radius:14px;padding:16px 20px;box-shadow:var(--shadow);border:1px solid #EEF2F7;overflow-x:auto;gap:0;}
+  .step-item{display:flex;align-items:center;gap:8px;flex-shrink:0;cursor:pointer;}
+  .step-circle{width:26px;height:26px;border-radius:50%;background:var(--cinza-claro);color:var(--cinza-medio);display:flex;align-items:center;justify-content:center;font-size:11.5px;font-weight:700;flex-shrink:0;}
+  .step-item.current .step-circle{background:var(--azul-inteligente);color:#fff;}
+  .step-item .step-label{font-size:11.5px;font-weight:600;color:var(--cinza-medio);white-space:nowrap;}
+  .step-item.current .step-label{color:var(--azul-profundo);}
+  .step-connector{width:20px;height:2px;background:#E2E8F0;margin:0 4px;flex-shrink:0;}
+  .lock-note{background:#EFF6FF;border:1px solid #BFDBFE;border-radius:10px;padding:12px 14px;font-size:12.5px;color:#1D4ED8;margin-bottom:16px;}
+  .lock-note.trava{background:#FEF3C7;border-color:#FDE68A;color:#92400E;}
+  .counter-pill{font-size:11px;font-weight:700;padding:3px 9px;border-radius:20px;background:var(--cinza-claro);color:var(--cinza-escuro);}
+  .counter-pill.full{background:#DCFCE7;color:#15803D;}
+  .q-row{border:1px solid #EEF2F7;border-radius:12px;padding:12px 14px;margin-bottom:8px;}
+  .q-row-top{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:8px;}
+  .q-row textarea{width:100%;border:1px solid #E2E8F0;border-radius:8px;padding:8px 10px;font-family:inherit;font-size:13px;resize:vertical;}
+  .q-type-tag{font-size:10.5px;color:var(--cinza-medio);background:var(--cinza-claro);padding:2px 8px;border-radius:20px;font-weight:600;white-space:nowrap;}
+  .q-row-actions{display:flex;gap:6px;}
+  .q-row-actions button{font-size:11px;padding:5px 10px;border-radius:7px;background:var(--cinza-claro);color:var(--cinza-escuro);font-weight:600;}
+  .q-row-actions button.danger{color:#B91C1C;}
+  .add-q-box{border:1.5px dashed #CBD5E1;border-radius:12px;padding:14px;margin-top:12px;}
+  .add-q-box input, .add-q-box select{width:100%;padding:9px 11px;border:1px solid #E2E8F0;border-radius:8px;font-family:inherit;font-size:13px;margin-bottom:8px;}
+  .client-tag{display:inline-flex;align-items:center;gap:6px;background:var(--cinza-claro);border-radius:20px;padding:6px 12px;font-size:12.5px;font-weight:600;margin:3px;}
+  .client-tag button{color:var(--cinza-medio);font-size:14px;line-height:1;background:none;}
+  .link-box{background:var(--cinza-claro);border-radius:10px;padding:12px 14px;font-size:12.5px;word-break:break-all;margin-top:10px;display:flex;justify-content:space-between;gap:10px;align-items:center;}
+  .alert-box{padding:12px 16px;border-radius:10px;font-size:13px;font-weight:600;margin-bottom:16px;}
+  .alert-error{background:#FEE2E2;color:#B91C1C;}
+  .alert-success{background:#DCFCE7;color:#15803D;}
+</style>
+
+  <script src="/js/footer.js"></script>
+  <script src="/js/pwa.js"></script>
+  <script>
+    if (typeof inserirRodape === 'function') { inserirRodape('app-footer', false); }
+
+    const token = localStorage.getItem('sigesc_token');
+    if (!token) { window.location.href = '/login.html'; }
+
+    const urlParams = new URLSearchParams(window.location.search);
+    let pesquisaId = urlParams.get('id');
+    let pesquisaAtual = null;
+    let stepAtual = 0;
+
+    async function apiFetch(path, options = {}) {
+      const resp = await fetch(path, {
+        ...options,
+        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token, ...(options.headers || {}) },
+      });
+      if (resp.status === 401) { localStorage.removeItem('sigesc_token'); window.location.href = '/login.html'; throw new Error('Sessão expirada'); }
+      const data = await resp.json();
+      if (!resp.ok) throw new Error(data.erro || 'Erro na requisição');
+      return data;
+    }
+
+    function mostrarMensagem(texto, tipo) {
+      const area = document.getElementById('msg-area');
+      area.innerHTML = `<div class="alert-box alert-${tipo}">${texto}</div>`;
+      window.scrollTo(0, 0);
+      setTimeout(() => { area.innerHTML = ''; }, 6000);
+    }
+
+    // ================= ETAPA INICIAL (sem pesquisa ainda) =================
+    async function carregarFormInicial() {
+      const data = await apiFetch('/api/empresas');
+      const select = document.getElementById('select-empresa');
+      select.innerHTML = data.empresas.map(e => `<option value="${e.id}">${e.nome}</option>`).join('');
+      if (data.empresas.length === 0) {
+        document.getElementById('campo-nova-empresa').style.display = 'block';
+        document.getElementById('btn-toggle-nova-empresa').style.display = 'none';
+      }
+    }
+
+    document.getElementById('btn-toggle-nova-empresa').addEventListener('click', () => {
+      document.getElementById('campo-nova-empresa').style.display = 'block';
+    });
+
+    document.getElementById('btn-criar-pesquisa').addEventListener('click', async () => {
+      const titulo = document.getElementById('input-titulo').value.trim();
+      const rotulo = document.getElementById('input-rotulo').value.trim() || 'Cliente';
+      const novaEmpresaNome = document.getElementById('input-nova-empresa').value.trim();
+
+      if (!titulo) { mostrarMensagem('Título é obrigatório.', 'error'); return; }
+
+      try {
+        let empresaId;
+        if (novaEmpresaNome) {
+          const nova = await apiFetch('/api/empresas', { method: 'POST', body: JSON.stringify({ nome: novaEmpresaNome }) });
+          empresaId = nova.empresa.id;
+        } else {
+          empresaId = document.getElementById('select-empresa').value;
+        }
+        if (!empresaId) { mostrarMensagem('Selecione ou cadastre uma empresa.', 'error'); return; }
+
+        const resultado = await apiFetch('/api/pesquisas', {
+          method: 'POST',
+          body: JSON.stringify({ titulo, empresaId, rotuloEntidade: rotulo }),
+        });
+        window.location.href = `/app/pesquisa-wizard.html?id=${resultado.pesquisa.id}`;
+      } catch (err) {
+        mostrarMensagem('Erro ao criar pesquisa: ' + err.message, 'error');
+      }
+    });
+
+    // ================= WIZARD (pesquisa já existe) =================
+    const STEP_LABELS = ['Orientações', 'Identificação', 'Atendimento', 'Infraestrutura', 'Tecnologia', 'Valor Percebido', 'Comentários'];
+
+    async function carregarPesquisa() {
+      const data = await apiFetch(`/api/pesquisas/${pesquisaId}`);
+      pesquisaAtual = data.pesquisa;
+      document.getElementById('page-title').textContent = pesquisaAtual.titulo;
+      renderStepper();
+      renderStepBody();
+    }
+
+    function renderStepper() {
+      let html = '';
+      STEP_LABELS.forEach((label, i) => {
+        html += `<div class="step-item ${i === stepAtual ? 'current' : ''}" onclick="irParaStep(${i})">
+          <div class="step-circle">${i + 1}</div><span class="step-label">${label}</span>
+        </div>`;
+        if (i < STEP_LABELS.length - 1) html += '<div class="step-connector"></div>';
+      });
+      document.getElementById('stepper').innerHTML = html;
+    }
+
+    function irParaStep(i) { stepAtual = i; renderStepper(); renderStepBody(); }
+
+    function qTypeLabel(tipo) {
+      const map = { escala_0_10: 'Escala 0–10', sim_nao: 'Sim/Não', multipla_escolha: 'Múltipla escolha', selecao: 'Seleção', texto_livre: 'Texto livre', nome: 'Nome', email: 'E-mail' };
+      return map[tipo] || tipo;
+    }
+
+    function renderQRow(pergunta, bloco) {
+      const podeRemover = !pergunta.fixa && !pesquisaAtual.perguntas_travadas;
+      const podeEditar = !pesquisaAtual.perguntas_travadas;
+      return `
+        <div class="q-row" data-pergunta-id="${pergunta.id}">
+          <div class="q-row-top">
+            <span class="q-type-tag">${qTypeLabel(pergunta.tipo)}${pergunta.fixa ? ' · fixa' : ''}</span>
+            <div class="q-row-actions">
+              ${podeEditar ? `<button onclick="salvarPergunta('${pergunta.id}')">Salvar</button>` : ''}
+              ${podeRemover ? `<button class="danger" onclick="removerPergunta('${pergunta.id}', '${bloco.id}')">Remover</button>` : ''}
+            </div>
+          </div>
+          <textarea rows="2" ${podeEditar ? '' : 'disabled'} id="texto-${pergunta.id}">${pergunta.texto}</textarea>
+        </div>`;
+    }
+
+    function renderStepBody() {
+      const bloco = pesquisaAtual.blocos[stepAtual];
+      let html = '';
+
+      if (pesquisaAtual.perguntas_travadas) {
+        html += `<div class="lock-note trava">🔒 Esta pesquisa já recebeu respostas — as perguntas estão travadas para edição. Você ainda pode gerenciar a carteira de clientes.</div>`;
+      }
+
+      if (bloco.tipo_bloco === 'orientacoes') {
+        html += `<h3 style="font-size:16px;margin-bottom:6px;">Bloco 1 · Orientações</h3>
+          <p style="color:var(--cinza-medio);font-size:13px;margin-bottom:16px;">Consentimento LGPD — bloqueante, não pontua score.</p>
+          <div class="field"><label>Texto da Política de Privacidade</label>
+            <textarea id="politica-texto" rows="4" style="width:100%;padding:10px;border:1px solid #E2E8F0;border-radius:8px;font-family:inherit;">${pesquisaAtual.politica_privacidade_texto}</textarea>
+          </div>
+          <button class="btn btn-primary" style="padding:8px 16px;font-size:12.5px;" onclick="salvarPolitica()">Salvar política</button>
+          <div style="margin-top:16px;">${bloco.perguntas.map(p => renderQRow(p, bloco)).join('')}</div>`;
+      } else if (bloco.tipo_bloco === 'identificacao') {
+        html += `<h3 style="font-size:16px;margin-bottom:6px;">Bloco 2 · Identificação</h3>
+          <p style="color:var(--cinza-medio);font-size:13px;margin-bottom:16px;">Não pontua score. Rótulo da entidade monitorada e carteira de clientes.</p>
+          <div class="field"><label>Rótulo da entidade monitorada</label>
+            <input type="text" id="rotulo-entidade" value="${pesquisaAtual.rotulo_entidade}" style="width:100%;padding:9px 11px;border:1px solid #E2E8F0;border-radius:8px;font-family:inherit;">
+          </div>
+          <button class="btn btn-primary" style="padding:8px 16px;font-size:12.5px;margin-bottom:20px;" onclick="salvarRotulo()">Salvar rótulo</button>
+          <div style="margin-bottom:16px;">${bloco.perguntas.map(p => renderQRow(p, bloco)).join('')}</div>
+          <h4 style="font-size:13px;margin-bottom:10px;">Carteira de clientes desta pesquisa</h4>
+          <div id="clientes-lista" style="margin-bottom:10px;">${renderClientes()}</div>
+          <div style="display:flex;gap:8px;">
+            <input type="text" id="input-novo-cliente" placeholder="Nome do cliente..." style="flex:1;padding:9px 11px;border:1px solid #E2E8F0;border-radius:8px;font-family:inherit;">
+            <button class="btn btn-primary" style="padding:9px 16px;font-size:12.5px;" onclick="adicionarCliente()">Adicionar</button>
+          </div>`;
+      } else {
+        const indicadorLabel = bloco.indicador_gerado ? ` → gera ${bloco.indicador_gerado} (peso ${(bloco.peso_no_score * 100).toFixed(0)}%)` : '';
+        html += `<h3 style="font-size:16px;margin-bottom:6px;">Bloco ${stepAtual + 1} · ${STEP_LABELS[stepAtual]}<span style="font-weight:500;font-size:12px;color:var(--cinza-medio);">${indicadorLabel}</span></h3>`;
+
+        if (bloco.limite_fechadas > 0) {
+          const cheio = bloco.qtdFechadas >= bloco.limite_fechadas;
+          html += `<div style="display:flex;justify-content:space-between;align-items:center;margin:14px 0 8px;">
+            <strong style="font-size:13px;">Perguntas fechadas (0–10)</strong>
+            <span class="counter-pill ${cheio ? 'full' : ''}">${bloco.qtdFechadas}/${bloco.limite_fechadas} usadas</span>
+          </div>`;
+          html += bloco.perguntas.filter(p => p.tipo === 'escala_0_10').map(p => renderQRow(p, bloco)).join('');
+          if (!cheio && !pesquisaAtual.perguntas_travadas) {
+            html += `<div class="add-q-box">
+              <input type="text" id="nova-fechada-${bloco.id}" placeholder="Texto da nova pergunta (escala 0–10)...">
+              <button class="btn btn-primary" style="padding:7px 14px;font-size:12px;" onclick="adicionarPergunta('${bloco.id}', 'escala_0_10', 'nova-fechada-${bloco.id}')">+ Adicionar pergunta fechada</button>
+            </div>`;
+          }
+        }
+
+        if (bloco.limite_abertas > 0) {
+          const cheiaAberta = bloco.qtdAbertas >= bloco.limite_abertas;
+          html += `<div style="display:flex;justify-content:space-between;align-items:center;margin:18px 0 8px;">
+            <strong style="font-size:13px;">Pergunta aberta</strong>
+            <span class="counter-pill ${cheiaAberta ? 'full' : ''}">${bloco.qtdAbertas}/${bloco.limite_abertas} usada</span>
+          </div>`;
+          html += bloco.perguntas.filter(p => p.tipo === 'texto_livre').map(p => renderQRow(p, bloco)).join('');
+          if (!cheiaAberta && !pesquisaAtual.perguntas_travadas) {
+            html += `<div class="add-q-box">
+              <input type="text" id="nova-aberta-${bloco.id}" placeholder="Texto da nova pergunta aberta...">
+              <button class="btn btn-primary" style="padding:7px 14px;font-size:12px;" onclick="adicionarPergunta('${bloco.id}', 'texto_livre', 'nova-aberta-${bloco.id}')">+ Adicionar pergunta aberta</button>
+            </div>`;
+          }
+        }
+      }
+
+      // Rodapé de ações — ativar / link público
+      html += `<div style="margin-top:26px;padding-top:20px;border-top:1px solid #EEF2F7;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;">
+        <div>${pesquisaAtual.status === 'ativa'
+          ? `<span class="status-pill" style="background:#DCFCE7;color:#15803D;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:700;">✓ Pesquisa ativa</span>`
+          : `<button class="btn btn-primary" onclick="ativarPesquisa()">Ativar pesquisa e gerar link →</button>`}</div>
+        <div style="display:flex;gap:10px;">
+          ${stepAtual > 0 ? `<button class="btn btn-outline-dark" style="padding:9px 16px;font-size:12.5px;" onclick="irParaStep(${stepAtual - 1})">← Voltar</button>` : ''}
+          ${stepAtual < 6 ? `<button class="btn btn-primary" style="padding:9px 16px;font-size:12.5px;" onclick="irParaStep(${stepAtual + 1})">Próximo →</button>` : ''}
+        </div>
+      </div>`;
+
+      if (pesquisaAtual.status === 'ativa') {
+        const link = `${window.location.origin}/p/${pesquisaAtual.slug_link_publico}`;
+        html += `<div class="link-box"><span>${link}</span><button class="btn btn-outline-dark" style="padding:6px 12px;font-size:11.5px;flex-shrink:0;" onclick="copiarLink('${link}')">Copiar</button></div>`;
+      }
+
+      document.getElementById('wizard-body').innerHTML = html;
+    }
+
+    function renderClientes() {
+      return pesquisaAtual.clientes.map(c => `<span class="client-tag">${c.nome_cliente} <button onclick="removerCliente('${c.id}')">✕</button></span>`).join('') || '<span style="color:var(--cinza-medio);font-size:12.5px;">Nenhum cliente cadastrado ainda.</span>';
+    }
+
+    async function salvarPolitica() {
+      try {
+        await apiFetch(`/api/pesquisas/${pesquisaId}`, { method: 'PUT', body: JSON.stringify({ politicaPrivacidadeTexto: document.getElementById('politica-texto').value }) });
+        mostrarMensagem('Política salva.', 'success');
+        await carregarPesquisa();
+      } catch (err) { mostrarMensagem(err.message, 'error'); }
+    }
+
+    async function salvarRotulo() {
+      try {
+        await apiFetch(`/api/pesquisas/${pesquisaId}`, { method: 'PUT', body: JSON.stringify({ rotuloEntidade: document.getElementById('rotulo-entidade').value }) });
+        mostrarMensagem('Rótulo salvo.', 'success');
+        await carregarPesquisa();
+      } catch (err) { mostrarMensagem(err.message, 'error'); }
+    }
+
+    async function salvarPergunta(perguntaId) {
+      try {
+        const texto = document.getElementById(`texto-${perguntaId}`).value;
+        await apiFetch(`/api/pesquisas/${pesquisaId}/perguntas/${perguntaId}`, { method: 'PUT', body: JSON.stringify({ texto }) });
+        mostrarMensagem('Pergunta salva.', 'success');
+      } catch (err) { mostrarMensagem(err.message, 'error'); }
+    }
+
+    async function removerPergunta(perguntaId) {
+      if (!confirm('Remover esta pergunta?')) return;
+      try {
+        await apiFetch(`/api/pesquisas/${pesquisaId}/perguntas/${perguntaId}`, { method: 'DELETE' });
+        mostrarMensagem('Pergunta removida.', 'success');
+        await carregarPesquisa();
+      } catch (err) { mostrarMensagem(err.message, 'error'); }
+    }
+
+    async function adicionarPergunta(blocoId, tipo, inputId) {
+      const texto = document.getElementById(inputId).value.trim();
+      if (!texto) return;
+      try {
+        await apiFetch(`/api/pesquisas/${pesquisaId}/blocos/${blocoId}/perguntas`, { method: 'POST', body: JSON.stringify({ texto, tipo }) });
+        mostrarMensagem('Pergunta adicionada.', 'success');
+        await carregarPesquisa();
+      } catch (err) { mostrarMensagem(err.message, 'error'); }
+    }
+
+    async function adicionarCliente() {
+      const input = document.getElementById('input-novo-cliente');
+      const nomeCliente = input.value.trim();
+      if (!nomeCliente) return;
+      try {
+        await apiFetch(`/api/pesquisas/${pesquisaId}/clientes`, { method: 'POST', body: JSON.stringify({ nomeCliente }) });
+        input.value = '';
+        await carregarPesquisa();
+      } catch (err) { mostrarMensagem(err.message, 'error'); }
+    }
+
+    async function removerCliente(clienteId) {
+      try {
+        await apiFetch(`/api/pesquisas/${pesquisaId}/clientes/${clienteId}`, { method: 'DELETE' });
+        await carregarPesquisa();
+      } catch (err) { mostrarMensagem(err.message, 'error'); }
+    }
+
+    async function ativarPesquisa() {
+      try {
+        await apiFetch(`/api/pesquisas/${pesquisaId}/ativar`, { method: 'POST' });
+        mostrarMensagem('Pesquisa ativada! Link público gerado.', 'success');
+        await carregarPesquisa();
+      } catch (err) { mostrarMensagem(err.message, 'error'); }
+    }
+
+    function copiarLink(link) {
+      navigator.clipboard.writeText(link).then(() => mostrarMensagem('Link copiado!', 'success'));
+    }
+
+    // ================= INICIALIZAÇÃO =================
+    (async () => {
+      try {
+        const resp = await fetch('/api/auth/me', { headers: { Authorization: 'Bearer ' + token } });
+        if (!resp.ok) { localStorage.removeItem('sigesc_token'); window.location.href = '/login.html'; return; }
+        const data = await resp.json();
+        document.getElementById('side-role-name').textContent = data.usuario.nome;
+        document.getElementById('side-role-tag').textContent = data.usuario.perfil === 'gestor' ? 'Gestor' : 'Usuário';
+      } catch (err) { window.location.href = '/login.html'; return; }
+
+      if (pesquisaId) {
+        document.getElementById('form-inicial').style.display = 'none';
+        document.getElementById('wizard-area').style.display = 'block';
+        try {
+          await carregarPesquisa();
+        } catch (err) {
+          mostrarMensagem('Erro ao carregar pesquisa: ' + err.message, 'error');
+        }
+      } else {
+        try { await carregarFormInicial(); } catch (err) { mostrarMensagem(err.message, 'error'); }
+      }
+    })();
+
+    document.getElementById('btn-logout').addEventListener('click', () => {
+      localStorage.removeItem('sigesc_token');
+      window.location.href = '/login.html';
+    });
+
+    const sidebar = document.getElementById('sidebar');
+    const backdrop = document.getElementById('sidebar-backdrop');
+    document.getElementById('menu-toggle').addEventListener('click', () => { sidebar.classList.add('open'); backdrop.classList.add('open'); });
+    document.getElementById('sidebar-close').addEventListener('click', () => { sidebar.classList.remove('open'); backdrop.classList.remove('open'); });
+    backdrop.addEventListener('click', () => { sidebar.classList.remove('open'); backdrop.classList.remove('open'); });
+    window.addEventListener('resize', () => { if (window.innerWidth > 900) { sidebar.classList.remove('open'); backdrop.classList.remove('open'); } });
+  </script>
+</body>
+</html>

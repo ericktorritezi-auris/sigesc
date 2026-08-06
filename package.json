@@ -24,7 +24,9 @@
     "jsonwebtoken": "^9.0.2",
     "pg": "^8.11.5"
   },
-  "devDependencies": {},
+  "devDependencies": {
+    "jsdom": "^24.0.0"
+  },
   "license": "UNLICENSED",
   "private": true
 }

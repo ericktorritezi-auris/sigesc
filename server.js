@@ -8,6 +8,8 @@ const compression = require('compression');
 
 const healthRoutes = require('./src/routes/health.routes');
 const authRoutes = require('./src/routes/auth.routes');
+const empresaRoutes = require('./src/routes/empresa.routes');
+const pesquisaRoutes = require('./src/routes/pesquisa.routes');
 const { errorHandler, notFoundHandler } = require('./src/middlewares/errorHandler');
 
 const app = express();
@@ -35,6 +37,8 @@ app.use(express.static(path.join(__dirname, 'public')));
 // ---------- Rotas de API ----------
 app.use('/health', healthRoutes);
 app.use('/api/auth', authRoutes);
+app.use('/api/empresas', empresaRoutes);
+app.use('/api/pesquisas', pesquisaRoutes);
 
 // ---------- Fallback para rotas não encontradas da API ----------
 app.use('/api', notFoundHandler);

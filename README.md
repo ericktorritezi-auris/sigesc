@@ -60,8 +60,12 @@ Organização (whitelabel)
 
 - A estrutura dos 7 blocos é **fixa**: o gestor edita o texto das perguntas, nunca a quantidade ou a ordem dos blocos.
 - Blocos 3–6 têm limite travado de perguntas fechadas (6/5/5/3) + aberta (1/1/1/0) — validado no backend, não só no frontend.
+- **Empresa** é uma entidade obrigatória entre Gestor e Pesquisa — mesmo quem opera um único negócio tem 1 empresa cadastrada (criada automaticamente no seed). Suporta grupos com múltiplas marcas (ex: Grupo Souyess → SIGCORP + outra empresa), cada uma com sua própria carteira de clientes.
+- **Ciclo** agrupa N pesquisas (uma por empresa) do mesmo período de medição como uma única fonte consolidada — dashboard e ISC nunca filtram por empresa, sempre somam tudo do ciclo junto.
 - Bloco 1 (LGPD) é bloqueante: quem recusa não avança na pesquisa, mas o evento de recusa é registrado no log LGPD.
 - Bloco 2 (Identificação) sempre coleta **Nome completo, E-mail e Cargo**, obrigatórios — necessários para a rastreabilidade jurídica do consentimento.
+- **Perguntas travam automaticamente** assim que a pesquisa recebe a 1ª resposta — carteira de clientes e política de privacidade continuam editáveis depois disso.
+- **Duplicar pesquisa** cria uma cópia em rascunho com carteira e link próprios; o gestor escolhe se ela entra no mesmo Ciclo da original (consolida) ou num Ciclo novo (independente).
 - Índices são agregados **por mês civil** (`ano_mes`, fuso America/Sao_Paulo). Toda resposta nova dentro do mesmo mês entra como mais um dado na média daquele mês — não substitui respostas anteriores.
 - Um usuário pertence a exatamente um gestor. Não há perfil hierárquico acima do gestor na v1 (mas o schema já reserva o campo para isso no futuro).
 - Nenhum dado de pesquisa é enviado por e-mail pelo sistema — o link público é disparado manualmente pelo gestor via mala direta externa.
@@ -160,6 +164,23 @@ O próprio sistema roda as migrations e o seed automaticamente a cada deploy (co
 6. Acessar `https://sigesc.belleplanner.com.br/login.html` e entrar com as credenciais do seed
 7. Depois de confirmar que o login funciona, pode remover `SEED_ADMIN_EMAIL`/`SEED_ADMIN_PASSWORD` do Railway com segurança — o sistema simplesmente pula essa etapa nos próximos deploys, sem quebrar nada
 8. Validar rota `/health` retornando 200
+
+---
+
+## 🧪 Testes automatizados
+
+O projeto inclui scripts de regressão reais — usados para validar cada sprint contra um banco PostgreSQL de verdade, não são só exemplos ilustrativos:
+
+```bash
+# Bateria de testes da API de Pesquisas/Empresas (Sprint 2) — precisa do servidor rodando em localhost:3000
+bash tests/test_sprint2_api.sh
+
+# Teste funcional do wizard de pesquisas — simula um usuário navegando de ponta a ponta
+# (criar pesquisa, adicionar cliente, ativar, gerar link) contra a página HTML real
+node tests/test_wizard_frontend.js
+```
+
+Ambos assumem que o servidor já está rodando e que o seed do gestor inicial já foi executado.
 
 ---
 

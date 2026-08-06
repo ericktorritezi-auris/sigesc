@@ -52,6 +52,17 @@ async function seedAdmin() {
 
   console.log('[SIGESC][SEED] ✅ Usuário Gestor criado com sucesso:');
   console.log(novoUsuario.rows[0]);
+
+  // Toda pesquisa exige uma Empresa — criamos 1 padrão automaticamente para
+  // que o gestor já consiga criar sua primeira pesquisa sem passo extra.
+  // Quem tiver múltiplas empresas (ex: grupo com várias marcas) cadastra as demais depois.
+  const gestorId = novoUsuario.rows[0].id;
+  const empresaPadrao = await query(
+    `INSERT INTO empresas (gestor_id, nome) VALUES ($1, $2) RETURNING id, nome`,
+    [gestorId, organizacaoNome]
+  );
+  console.log('[SIGESC][SEED] ✅ Empresa padrão criada:', empresaPadrao.rows[0]);
+
   console.log('[SIGESC][SEED] Lembre-se de remover SEED_ADMIN_EMAIL/SEED_ADMIN_PASSWORD do Railway após o primeiro login.');
 
   await pool.end();

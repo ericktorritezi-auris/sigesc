@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SIGESC — Pesquisas</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/style.css">
+<link rel="manifest" href="/manifest.json">
+<link rel="icon" type="image/x-icon" href="/favicon.ico">
+<link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-touch-icon.png">
+<meta name="theme-color" content="#0D1B2A">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="SIGESC">
+</head>
+<body data-app-version="1.0">
+  <div class="app-shell">
+    <div class="sidebar-backdrop" id="sidebar-backdrop"></div>
+    <div class="sidebar" id="sidebar">
+      <button class="sidebar-close" id="sidebar-close" aria-label="Fechar menu">✕</button>
+      <div class="brand">
+        <svg viewBox="0 0 40 40" width="26" height="26" fill="none"><circle cx="20" cy="20" r="19" stroke="#00B4A6" stroke-width="2.2"/><path d="M9 22 L14 22 L16.5 17 L19 26 L21.5 19 L24 22 L31 22" stroke="#00B4A6" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span class="brand-text">SIGESC</span>
+      </div>
+      <div class="side-role">
+        <div class="name" id="side-role-name">—</div>
+        <span class="tag-role" id="side-role-tag">—</span>
+      </div>
+      <div class="side-nav">
+        <a href="/app/index.html">📊 Dashboard</a>
+        <button class="active">📋 Pesquisas</button>
+        <button disabled title="Disponível no Sprint 3" style="opacity:.4;cursor:not-allowed;">💬 Respostas</button>
+        <button disabled title="Disponível no Sprint 6" style="opacity:.4;cursor:not-allowed;">🛡️ LGPD</button>
+        <button disabled title="Disponível no Sprint 6" style="opacity:.4;cursor:not-allowed;">👥 Usuários</button>
+        <button disabled title="Disponível no Sprint 6" style="opacity:.4;cursor:not-allowed;">⚙️ Configurações</button>
+      </div>
+      <div class="side-foot">
+        <button id="btn-logout">↩ Sair</button>
+      </div>
+    </div>
+
+    <div class="main">
+      <div class="topbar">
+        <div class="topbar-left">
+          <button class="menu-toggle" id="menu-toggle" aria-label="Abrir menu">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+          </button>
+          <div>
+            <h2>Pesquisas</h2>
+            <div class="sub">Todas as pesquisas da sua carteira</div>
+          </div>
+        </div>
+        <button class="btn btn-primary" id="btn-nova-pesquisa" style="padding:9px 16px;font-size:13px;">+ Criar pesquisa</button>
+      </div>
+
+      <div class="content">
+        <div id="msg-area"></div>
+
+        <div class="card">
+          <table>
+            <thead>
+              <tr><th>Título</th><th>Empresa</th><th>Ciclo</th><th>Status</th><th>Clientes</th><th>Respostas</th><th></th></tr>
+            </thead>
+            <tbody id="pesquisas-rows">
+              <tr><td colspan="7" style="text-align:center;color:var(--cinza-medio);padding:30px;">Carregando...</td></tr>
+            </tbody>
+          </table>
+          <div class="pagination">
+            <span id="pag-label"></span>
+            <div class="page-btns" id="pag-btns"></div>
+          </div>
+        </div>
+
+        <div id="app-footer"></div>
+      </div>
+    </div>
+  </div>
+
+<style>
+  .status-pill{font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;}
+  .status-ativa{background:#DCFCE7;color:#15803D;}
+  .status-rascunho{background:#F1F5F9;color:var(--cinza-medio);}
+  .status-encerrada{background:#E2E8F0;color:var(--cinza-escuro);}
+  .row-actions{display:flex;gap:6px;}
+  .row-actions button{font-size:11.5px;padding:6px 10px;border-radius:7px;background:var(--cinza-claro);color:var(--cinza-escuro);font-weight:600;}
+  .row-actions button:hover{background:#E2E8F0;}
+  .alert-box{padding:12px 16px;border-radius:10px;font-size:13px;font-weight:600;margin-bottom:16px;}
+  .alert-error{background:#FEE2E2;color:#B91C1C;}
+  .alert-success{background:#DCFCE7;color:#15803D;}
+</style>
+
+  <script src="/js/footer.js"></script>
+  <script src="/js/pwa.js"></script>
+  <script>
+    if (typeof inserirRodape === 'function') { inserirRodape('app-footer', false); }
+
+    const token = localStorage.getItem('sigesc_token');
+    if (!token) { window.location.href = '/login.html'; }
+
+    let paginaAtual = 1;
+
+    async function apiFetch(path, options = {}) {
+      const resp = await fetch(path, {
+        ...options,
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: 'Bearer ' + token,
+          ...(options.headers || {}),
+        },
+      });
+      if (resp.status === 401) {
+        localStorage.removeItem('sigesc_token');
+        window.location.href = '/login.html';
+        throw new Error('Sessão expirada');
+      }
+      const data = await resp.json();
+      if (!resp.ok) throw new Error(data.erro || 'Erro na requisição');
+      return data;
+    }
+
+    function mostrarMensagem(texto, tipo) {
+      const area = document.getElementById('msg-area');
+      area.innerHTML = `<div class="alert-box alert-${tipo}">${texto}</div>`;
+      setTimeout(() => { area.innerHTML = ''; }, 5000);
+    }
+
+    function badgeStatus(status) {
+      const map = { ativa: ['Ativa', 'status-ativa'], rascunho: ['Rascunho', 'status-rascunho'], encerrada: ['Encerrada', 'status-encerrada'] };
+      const [label, cls] = map[status] || [status, 'status-rascunho'];
+      return `<span class="status-pill ${cls}">${label}</span>`;
+    }
+
+    async function carregarPesquisas(pagina = 1) {
+      paginaAtual = pagina;
+      try {
+        const data = await apiFetch(`/api/pesquisas?page=${pagina}&limit=20`);
+        renderTabela(data);
+      } catch (err) {
+        mostrarMensagem('Erro ao carregar pesquisas: ' + err.message, 'error');
+      }
+    }
+
+    function renderTabela(data) {
+      const tbody = document.getElementById('pesquisas-rows');
+      if (data.pesquisas.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;color:var(--cinza-medio);padding:30px;">Nenhuma pesquisa criada ainda. Clique em "+ Criar pesquisa" para começar.</td></tr>`;
+      } else {
+        tbody.innerHTML = data.pesquisas.map(p => `
+          <tr>
+            <td><strong>${p.titulo}</strong></td>
+            <td>${p.empresa_nome}</td>
+            <td>${p.ciclo_titulo}</td>
+            <td>${badgeStatus(p.status)}</td>
+            <td>${p.total_clientes}</td>
+            <td>${p.total_respostas}</td>
+            <td class="row-actions">
+              <button onclick="location.href='/app/pesquisa-wizard.html?id=${p.id}'">Editar</button>
+              <button onclick="duplicarPesquisa('${p.id}')">Duplicar</button>
+            </td>
+          </tr>
+        `).join('');
+      }
+
+      document.getElementById('pag-label').textContent = `Mostrando ${data.pesquisas.length} de ${data.total}`;
+      const btns = document.getElementById('pag-btns');
+      btns.innerHTML = '';
+      for (let i = 1; i <= data.totalPaginas; i++) {
+        const b = document.createElement('button');
+        b.textContent = i;
+        if (i === data.page) b.classList.add('active');
+        b.onclick = () => carregarPesquisas(i);
+        btns.appendChild(b);
+      }
+    }
+
+    async function duplicarPesquisa(pesquisaId) {
+      try {
+        const empresasData = await apiFetch('/api/empresas');
+        const nomes = empresasData.empresas.map((e, i) => `${i + 1}) ${e.nome}`).join('\n');
+        const escolha = prompt(`Duplicar para qual empresa?\n${nomes}\n\nDigite o número:`);
+        const idx = parseInt(escolha, 10) - 1;
+        if (isNaN(idx) || !empresasData.empresas[idx]) return;
+
+        const mesmoCiclo = confirm('Vincular ao MESMO CICLO da pesquisa original? (OK = sim, consolida os resultados / Cancelar = cria um ciclo novo e independente)');
+
+        const resultado = await apiFetch(`/api/pesquisas/${pesquisaId}/duplicar`, {
+          method: 'POST',
+          body: JSON.stringify({ empresaId: empresasData.empresas[idx].id, mesmoCiclo }),
+        });
+        mostrarMensagem('Pesquisa duplicada com sucesso para ' + empresasData.empresas[idx].nome + '!', 'success');
+        carregarPesquisas(paginaAtual);
+      } catch (err) {
+        mostrarMensagem('Erro ao duplicar: ' + err.message, 'error');
+      }
+    }
+
+    document.getElementById('btn-nova-pesquisa').addEventListener('click', () => {
+      window.location.href = '/app/pesquisa-wizard.html';
+    });
+
+    (async () => {
+      try {
+        const resp = await fetch('/api/auth/me', { headers: { Authorization: 'Bearer ' + token } });
+        if (!resp.ok) { localStorage.removeItem('sigesc_token'); window.location.href = '/login.html'; return; }
+        const data = await resp.json();
+        document.getElementById('side-role-name').textContent = data.usuario.nome;
+        document.getElementById('side-role-tag').textContent = data.usuario.perfil === 'gestor' ? 'Gestor' : 'Usuário';
+      } catch (err) {
+        window.location.href = '/login.html';
+      }
+      carregarPesquisas(1);
+    })();
+
+    document.getElementById('btn-logout').addEventListener('click', () => {
+      localStorage.removeItem('sigesc_token');
+      window.location.href = '/login.html';
+    });
+
+    const sidebar = document.getElementById('sidebar');
+    const backdrop = document.getElementById('sidebar-backdrop');
+    document.getElementById('menu-toggle').addEventListener('click', () => { sidebar.classList.add('open'); backdrop.classList.add('open'); });
+    document.getElementById('sidebar-close').addEventListener('click', () => { sidebar.classList.remove('open'); backdrop.classList.remove('open'); });
+    backdrop.addEventListener('click', () => { sidebar.classList.remove('open'); backdrop.classList.remove('open'); });
+    window.addEventListener('resize', () => { if (window.innerWidth > 900) { sidebar.classList.remove('open'); backdrop.classList.remove('open'); } });
+  </script>
+</body>
+</html>
