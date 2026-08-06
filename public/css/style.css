@@ -88,3 +88,19 @@ a{text-decoration:none;color:inherit;}
   .sidebar{position:fixed;left:-240px;top:0;bottom:0;z-index:60;transition:.2s;}
   .sidebar.open{left:0;}
 }
+
+/* ---------- PWA: botão de instalar (Android) e aviso (iOS) ---------- */
+.pwa-install-btn{
+  position:fixed;bottom:20px;right:20px;z-index:80;
+  background:var(--azul-inteligente);color:#fff;font-weight:600;font-size:13.5px;
+  padding:12px 18px;border-radius:30px;box-shadow:0 8px 24px rgba(37,99,235,.4);
+}
+.pwa-ios-hint{
+  position:fixed;bottom:0;left:0;right:0;z-index:80;
+  background:var(--azul-profundo);color:#fff;font-size:13px;line-height:1.5;
+  padding:14px 40px 14px 18px;box-shadow:0 -4px 16px rgba(0,0,0,.2);
+}
+.pwa-ios-hint button{
+  position:absolute;top:10px;right:12px;background:transparent;color:#B9C4D6;font-size:16px;
+}
+

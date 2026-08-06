@@ -117,6 +117,9 @@ sigesc/
 │   ├── middlewares/      # autenticação, rate limit, validação
 │   └── utils/            # helpers (datas, timezone, formatação)
 ├── public/               # formulário público de resposta (frontend)
+│   ├── icons/            # favicon + ícones de app (iOS/Android/PWA)
+│   ├── manifest.json     # Web App Manifest (PWA)
+│   └── sw.js             # Service Worker (instalabilidade + cache do shell)
 ├── views/ ou client/     # área logada (dashboard, wizard, etc.)
 ├── migrations/           # scripts de criação/alteração de tabelas
 ├── seeds/                # script de criação do usuário Gestor inicial
@@ -127,6 +130,21 @@ sigesc/
 ├── server.js
 └── README.md
 ```
+
+---
+
+## 📱 Instalação como App (PWA)
+
+O SIGESC pode ser instalado como aplicativo tanto no Android quanto no iPhone, direto do navegador — sem passar por loja de aplicativos.
+
+**Android/Chrome:** o navegador oferece automaticamente um botão "📲 Instalar app" flutuante na tela (usa o prompt nativo do Chrome). Depois de instalado, o SIGESC abre em tela cheia, com ícone próprio na tela inicial, como qualquer outro app.
+
+**iPhone/Safari:** a Apple não permite prompt automático de instalação — por isso, ao acessar pelo Safari, aparece um aviso na parte inferior da tela orientando: toque em **Compartilhar** ⬆️ → **"Adicionar à Tela de Início"**.
+
+**O que torna isso possível:**
+- `manifest.json` — define nome, cores, ícones e modo de exibição (`standalone`, sem barra de navegador)
+- `sw.js` (Service Worker) — obrigatório para o Android considerar o app "instalável"; cacheia a casca estática (login, CSS, JS) para abrir mais rápido, mas **nunca** cacheia chamadas de API — dados de pesquisa/resposta sempre vêm frescos do servidor
+- Ícones em todos os tamanhos oficiais: favicon (16/32/48px), Apple Touch Icon (152/167/180px), Android/Chrome (192/512px) e versões *maskable* (192/512px, com área de segurança para o recorte adaptativo do Android)
 
 ---
 
