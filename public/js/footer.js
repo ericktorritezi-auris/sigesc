@@ -11,6 +11,12 @@ function inserirRodape(elementId, dark) {
   const el = document.getElementById(elementId);
   if (el) {
     el.innerHTML = montarRodape(dark);
-    el.className = dark ? 'sigesc-footer dark' : 'sigesc-footer';
+    // Usa classList.add (não substitui className) — páginas como o formulário
+    // público já têm sua própria classe de estilo no elemento (ex:
+    // sigesc-footer-public, pensada pro fundo escuro), e sobrescrever o
+    // className inteiro apagava esse estilo, deixando o rodapé sem nenhum
+    // CSS aplicado (bug real encontrado em 06/08/2026).
+    el.classList.add('sigesc-footer');
+    if (dark) el.classList.add('dark');
   }
 }
