@@ -59,7 +59,7 @@ a{text-decoration:none;color:inherit;}
 
 /* ---------- APP SHELL ---------- */
 .app-shell{display:flex;min-height:100vh;}
-.sidebar{width:230px;background:var(--azul-profundo);color:#fff;padding:20px 14px;display:flex;flex-direction:column;flex-shrink:0;}
+.sidebar{width:230px;background:var(--azul-profundo);color:#fff;padding:20px 14px;display:flex;flex-direction:column;flex-shrink:0;position:relative;}
 .sidebar .brand{margin-bottom:26px;padding:0 8px;}
 .side-role{background:rgba(255,255,255,.06);border-radius:10px;padding:10px 12px;margin-bottom:18px;font-size:12px;}
 .side-role .name{font-weight:700;font-size:13px;}
@@ -73,6 +73,7 @@ a{text-decoration:none;color:inherit;}
 .side-foot button:hover{background:rgba(255,255,255,.06);color:#fff;}
 .main{flex:1;min-width:0;}
 .topbar{background:#fff;border-bottom:1px solid #E7ECF3;padding:16px 28px;display:flex;justify-content:space-between;align-items:center;}
+.topbar-left{display:flex;align-items:center;}
 .topbar h2{font-size:19px;}
 .topbar .sub{font-size:12.5px;color:var(--cinza-medio);margin-top:2px;}
 .content{padding:26px 28px 60px;}
@@ -85,9 +86,33 @@ a{text-decoration:none;color:inherit;}
 .sigesc-footer.dark{color:#8FA0B8;border-top:1px solid rgba(255,255,255,.1);}
 
 @media(max-width:900px){
-  .sidebar{position:fixed;left:-240px;top:0;bottom:0;z-index:60;transition:.2s;}
+  .sidebar{position:fixed;left:-260px;top:0;bottom:0;z-index:60;transition:left .25s ease;box-shadow:4px 0 24px rgba(0,0,0,.25);}
   .sidebar.open{left:0;}
+  .menu-toggle{display:flex !important;}
 }
+
+/* ---------- Menu sanduíche (botão, backdrop, fechar) ---------- */
+.menu-toggle{
+  display:none; /* só aparece no mobile via media query acima */
+  align-items:center;justify-content:center;
+  width:38px;height:38px;border-radius:9px;background:var(--cinza-claro);color:var(--azul-profundo);
+  margin-right:12px;flex-shrink:0;
+}
+.sidebar-close{
+  display:none;
+  position:absolute;top:14px;right:14px;width:30px;height:30px;border-radius:8px;
+  background:rgba(255,255,255,.08);color:#fff;font-size:15px;align-items:center;justify-content:center;
+}
+.sidebar-backdrop{
+  display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(13,27,42,.55);z-index:55;
+  opacity:0;transition:opacity .25s ease;
+}
+.sidebar-backdrop.open{display:block;opacity:1;}
+
+@media(max-width:900px){
+  .sidebar-close{display:flex;}
+}
+
 
 /* ---------- PWA: botão de instalar (Android) e aviso (iOS) ---------- */
 .pwa-install-btn{

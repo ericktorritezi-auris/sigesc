@@ -54,7 +54,7 @@
   <script src="/js/footer.js"></script>
   <script src="/js/pwa.js"></script>
   <script>
-    inserirRodape('public-footer', true);
+    if (typeof inserirRodape === 'function') { inserirRodape('public-footer', true); }
 
     const form = document.getElementById('login-form');
     const errorBox = document.getElementById('login-error');

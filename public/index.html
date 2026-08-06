@@ -42,6 +42,6 @@
 
   <script src="/js/footer.js"></script>
   <script src="/js/pwa.js"></script>
-  <script>inserirRodape('landing-footer', false);</script>
+  <script>if (typeof inserirRodape === 'function') { inserirRodape('landing-footer', false); }</script>
 </body>
 </html>
