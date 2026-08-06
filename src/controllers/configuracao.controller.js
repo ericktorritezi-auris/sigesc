@@ -10,7 +10,12 @@ function tratarErro(err, res, next) {
 async function getConfiguracao(req, res, next) {
   try {
     const configuracao = await configuracaoService.buscarConfiguracao(req.usuario);
-    res.status(200).json({ configuracao });
+    // iaDisponivel combina o toggle da organização com a existência real da
+    // chave de API — é essa flag que o frontend deve usar pra decidir se
+    // mostra os botões de IA, não só o toggle isolado.
+    res.status(200).json({
+      configuracao: { ...configuracao, iaDisponivel: Boolean(process.env.ANTHROPIC_API_KEY) && configuracao.ia_analise_habilitada },
+    });
   } catch (err) {
     tratarErro(err, res, next);
   }

@@ -107,6 +107,7 @@
     const token = localStorage.getItem('sigesc_token');
     if (!token) { window.location.href = '/login.html'; }
     let paginaAtual = 1;
+    let iaDisponivel = false;
 
     async function apiFetch(path, options = {}) {
       const resp = await fetch(path, { ...options, headers: { Authorization: 'Bearer ' + token, ...(options.headers || {}) } });
@@ -185,6 +186,11 @@
           <div class="score-mini"><div class="v" style="color:#22C55E;">${resposta.isv ?? '—'}</div><div class="l">ISV</div></div>
         </div>`;
 
+        if (iaDisponivel) {
+          html += `<button class="btn btn-outline-dark" id="btn-plano-acao" style="padding:8px 14px;font-size:12px;margin-bottom:16px;" onclick="gerarPlanoAcao('${resposta.id}')">✨ Gerar sugestão de plano de ação com IA</button>
+            <div id="plano-acao-resultado"></div>`;
+        }
+
         const labelBloco = { orientacoes: 'Orientações', identificacao: 'Identificação', atendimento: 'Atendimento', infraestrutura: 'Infraestrutura', tecnologia: 'Tecnologia', valor_percebido: 'Valor Percebido', comentarios: 'Comentários' };
 
         resposta.blocos.forEach(b => {
@@ -204,8 +210,12 @@
             if (p.tipo === 'nome' || p.tipo === 'email' || p.tipo === 'selecao_cliente') return; // já mostrados acima/no cabeçalho
             if (b.tipo_bloco === 'identificacao' && p.tipo === 'texto_livre') return; // é o Cargo, já mostrado acima
             if (p.tipo === 'texto_livre') {
+              const jaAnalisado = p.sentimento_ia;
+              const tagSentimento = { positivo: '<span class="badge badge-excelente" style="margin-left:8px;">😊 Positivo</span>', neutro: '<span class="badge" style="background:#F1F5F9;color:#64748B;margin-left:8px;">😐 Neutro</span>', negativo: '<span class="badge badge-critico" style="margin-left:8px;">😟 Negativo</span>' };
               html += `<div style="margin-bottom:8px;"><span style="font-size:12.5px;color:var(--cinza-escuro);">${p.texto}</span>
-                <div class="open-ans">${p.valor_texto ? '"' + p.valor_texto + '"' : '<span style="color:var(--cinza-medio);">Não respondida</span>'}</div></div>`;
+                <div class="open-ans" id="open-ans-${p.id}">${p.valor_texto ? '"' + p.valor_texto + '"' : '<span style="color:var(--cinza-medio);">Não respondida</span>'}${jaAnalisado ? tagSentimento[jaAnalisado] : ''}</div>
+                ${iaDisponivel && p.valor_texto && !jaAnalisado ? `<button class="btn btn-outline-dark" style="padding:5px 10px;font-size:11px;margin-top:6px;" onclick="analisarSentimento('${resposta.id}','${p.id}')">🔍 Analisar sentimento</button>` : ''}
+              </div>`;
             } else {
               const valor = qTypeVal(p) || `<span class="a-val">${p.valor_texto || '—'}</span>`;
               html += `<div class="ans-row ${!p.valor_numerico && !p.valor_texto ? 'vazio' : ''}"><span>${p.texto}</span>${valor}</div>`;
@@ -221,6 +231,35 @@
       }
     }
     function fecharModal() { document.getElementById('modal-detalhe').classList.remove('active'); }
+
+    async function analisarSentimento(respostaId, perguntaId) {
+      const el = document.getElementById(`open-ans-${perguntaId}`);
+      try {
+        const { sentimento } = await apiFetch(`/api/respostas/${respostaId}/perguntas/${perguntaId}/analisar-sentimento`, { method: 'POST' });
+        const tags = { positivo: '😊 Positivo', neutro: '😐 Neutro', negativo: '😟 Negativo' };
+        const cores = { positivo: 'badge-excelente', neutro: '', negativo: 'badge-critico' };
+        el.innerHTML += `<span class="badge ${cores[sentimento]}" style="margin-left:8px;${sentimento === 'neutro' ? 'background:#F1F5F9;color:#64748B;' : ''}">${tags[sentimento]}</span>`;
+        abrirDetalhe(respostaId); // recarrega pra sumir com o botão agora que já foi analisado
+      } catch (err) {
+        mostrarMensagem('Erro ao analisar sentimento: ' + err.message, 'error');
+      }
+    }
+
+    async function gerarPlanoAcao(respostaId) {
+      const btn = document.getElementById('btn-plano-acao');
+      const textoOriginal = btn.textContent;
+      btn.textContent = 'Gerando...';
+      btn.disabled = true;
+      try {
+        const { plano } = await apiFetch(`/api/respostas/${respostaId}/plano-acao`, { method: 'POST' });
+        document.getElementById('plano-acao-resultado').innerHTML = `<div class="open-ans" style="margin-bottom:16px;background:#EFF6FF;color:#1D4ED8;">${plano}</div>`;
+      } catch (err) {
+        mostrarMensagem('Erro ao gerar plano de ação: ' + err.message, 'error');
+      } finally {
+        btn.textContent = textoOriginal;
+        btn.disabled = false;
+      }
+    }
 
     document.getElementById('btn-filtrar').addEventListener('click', () => carregar(1));
     document.getElementById('btn-limpar').addEventListener('click', () => {
@@ -238,6 +277,10 @@
         document.getElementById('side-role-name').textContent = data.usuario.nome;
         document.getElementById('side-role-tag').textContent = data.usuario.perfil === 'gestor' ? 'Gestor' : 'Usuário';
       } catch (err) { window.location.href = '/login.html'; return; }
+      try {
+        const { configuracao } = await apiFetch('/api/configuracoes');
+        iaDisponivel = configuracao.iaDisponivel;
+      } catch (err) { /* se a checagem falhar, os botões de IA simplesmente não aparecem */ }
       carregar(1);
     })();
 

@@ -1,7 +1,8 @@
 const respostaService = require('../services/resposta.service');
+const { IAError } = require('../services/ia.service');
 
 function tratarErro(err, res, next) {
-  if (err instanceof respostaService.AppError) {
+  if (err instanceof respostaService.AppError || err instanceof IAError) {
     return res.status(err.status).json({ erro: err.message });
   }
   return next(err);
@@ -34,4 +35,22 @@ async function getRespostaDetalhe(req, res, next) {
   }
 }
 
-module.exports = { getRespostas, getRespostaDetalhe };
+async function postAnalisarSentimento(req, res, next) {
+  try {
+    const resultado = await respostaService.analisarSentimentoItem(req.usuario, req.params.id, req.params.perguntaId);
+    res.status(200).json(resultado);
+  } catch (err) {
+    tratarErro(err, res, next);
+  }
+}
+
+async function postPlanoAcao(req, res, next) {
+  try {
+    const resultado = await respostaService.gerarPlanoAcaoResposta(req.usuario, req.params.id);
+    res.status(200).json(resultado);
+  } catch (err) {
+    tratarErro(err, res, next);
+  }
+}
+
+module.exports = { getRespostas, getRespostaDetalhe, postAnalisarSentimento, postPlanoAcao };

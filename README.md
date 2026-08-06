@@ -75,6 +75,7 @@ Organização (whitelabel)
 - **Dashboard sempre consolidado** — sem filtro por empresa. O gestor escolhe qual Ciclo visualizar (se tiver mais de um), e a partir daí tudo é somado: ranking, distribuição de saúde, perfil de respondentes.
 - **Administrador não é uma linha no banco** — existe só como variáveis de ambiente (`ADMIN_EMAIL`/`ADMIN_PASSWORD`), permanentes. É por isso que ele nunca é afetado por um reset total do sistema. Sua única função é criar/editar/desativar Gestores, exportar backup e resetar — nunca toca em Pesquisas, Empresas, etc (bloqueado explicitamente).
 - **PDF do relatório executivo é gerado 100% em JavaScript** (biblioteca PDFKit) — sem depender de nenhum binário externo instalado no servidor, o que garante que funciona igual no Railway e em qualquer ambiente Node padrão.
+- **IA é sempre opcional e nunca automática** — só é chamada quando o gestor clica em "Analisar sentimento" ou "Gerar plano de ação". Disponibilidade combina 2 fatores: a chave `ANTHROPIC_API_KEY` estar configurada no ambiente E o toggle da organização em Configurações estar ligado — os botões só aparecem na interface quando os dois estão verdadeiros.
 - Um usuário pertence a exatamente um gestor. Não há perfil hierárquico acima do gestor na v1 (mas o schema já reserva o campo para isso no futuro).
 - Nenhum dado de pesquisa é enviado por e-mail pelo sistema — o link público é disparado manualmente pelo gestor via mala direta externa.
 
@@ -210,6 +211,10 @@ node tests/test_admin_frontend.js
 
 # Teste funcional do Modo Apresentação (TV) e Exportação de PDF
 node tests/test_tv_pdf_frontend.js
+
+# Teste dos botões de IA (Analisar sentimento / Plano de ação) — confirma que
+# eles somem corretamente quando a IA está desligada (toggle ou chave ausente)
+node tests/test_ia_frontend.js
 ```
 
 Ambos assumem que o servidor já está rodando e que o seed do gestor inicial já foi executado.

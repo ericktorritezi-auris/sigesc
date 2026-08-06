@@ -1,5 +1,6 @@
 const { query } = require('../config/db');
 const { gestorEfetivoId } = require('./empresa.service');
+const iaService = require('./ia.service');
 
 class AppError extends Error {
   constructor(message, status = 400) {
@@ -83,4 +84,61 @@ async function buscarDetalheResposta(usuarioAutenticado, respostaId) {
   return { ...resposta, blocos };
 }
 
-module.exports = { listarRespostas, buscarDetalheResposta, AppError };
+async function buscarOrganizacaoIaHabilitada(usuarioAutenticado) {
+  const { rows } = await query('SELECT ia_analise_habilitada FROM organizacoes WHERE id = $1', [usuarioAutenticado.organizacaoId]);
+  return rows[0]?.ia_analise_habilitada ?? false;
+}
+
+/**
+ * Analisa o sentimento de UMA resposta aberta específica (identificada pelo
+ * ID da PERGUNTA, não do item interno — consistente com o resto da API,
+ * que sempre trabalha com perguntaId) e grava o resultado.
+ */
+async function analisarSentimentoItem(usuarioAutenticado, respostaId, perguntaId) {
+  const gestorId = gestorEfetivoId(usuarioAutenticado);
+
+  const { rows } = await query(
+    `SELECT ri.id, ri.valor_texto FROM respostas_itens ri
+     JOIN respostas r ON r.id = ri.resposta_id
+     JOIN pesquisas p ON p.id = r.pesquisa_id
+     WHERE ri.pergunta_id = $1 AND ri.resposta_id = $2 AND p.gestor_id = $3`,
+    [perguntaId, respostaId, gestorId]
+  );
+  if (rows.length === 0) {
+    throw new AppError('Não há resposta gravada para esta pergunta.', 404);
+  }
+
+  const orgIaHabilitada = await buscarOrganizacaoIaHabilitada(usuarioAutenticado);
+  const sentimento = await iaService.analisarSentimento(orgIaHabilitada, rows[0].valor_texto);
+
+  await query('UPDATE respostas_itens SET sentimento_ia = $1 WHERE id = $2', [sentimento, rows[0].id]);
+  return { perguntaId, sentimento };
+}
+
+/**
+ * Gera uma sugestão de plano de ação com base em TODAS as respostas
+ * abertas daquela resposta específica.
+ */
+async function gerarPlanoAcaoResposta(usuarioAutenticado, respostaId) {
+  const detalhe = await buscarDetalheResposta(usuarioAutenticado, respostaId);
+
+  const respostasAbertas = [];
+  detalhe.blocos.forEach((b) => {
+    b.perguntas.forEach((p) => {
+      if (p.tipo === 'texto_livre' && p.valor_texto && p.valor_texto.trim() && b.tipo_bloco !== 'identificacao') {
+        respostasAbertas.push({ pergunta: p.texto, texto: p.valor_texto });
+      }
+    });
+  });
+
+  const orgIaHabilitada = await buscarOrganizacaoIaHabilitada(usuarioAutenticado);
+  const plano = await iaService.gerarPlanoAcao(orgIaHabilitada, {
+    nomeCliente: detalhe.nome_cliente,
+    scoreGeral: detalhe.score_geral,
+    respostasAbertas,
+  });
+
+  return { plano };
+}
+
+module.exports = { listarRespostas, buscarDetalheResposta, analisarSentimentoItem, gerarPlanoAcaoResposta, AppError };
