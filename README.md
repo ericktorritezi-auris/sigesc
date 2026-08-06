@@ -77,6 +77,7 @@ Organização (whitelabel)
 - **PDF do relatório executivo é gerado 100% em JavaScript** (biblioteca PDFKit) — sem depender de nenhum binário externo instalado no servidor, o que garante que funciona igual no Railway e em qualquer ambiente Node padrão.
 - **IA é sempre opcional e nunca automática** — só é chamada quando o gestor clica em "Analisar sentimento" ou "Gerar plano de ação". Disponibilidade combina 2 fatores: a chave `ANTHROPIC_API_KEY` estar configurada no ambiente E o toggle da organização em Configurações estar ligado — os botões só aparecem na interface quando os dois estão verdadeiros.
 - **Agregação mensal é segura sob concorrência real** — protegida por `pg_advisory_xact_lock` chaveada por cliente+mês, garantindo que respostas simultâneas do mesmo cliente no mesmo mês nunca se sobrescrevem (testado e comprovado — ver Sprint 9).
+- **Confia no proxy do Railway** (`trust proxy`) — sem isso, o `express-rate-limit` não consegue identificar visitantes individuais corretamente (trataria todo mundo atrás do proxy como uma pessoa só), e loga erro de validação a cada requisição em produção.
 - Um usuário pertence a exatamente um gestor. Não há perfil hierárquico acima do gestor na v1 (mas o schema já reserva o campo para isso no futuro).
 - Nenhum dado de pesquisa é enviado por e-mail pelo sistema — o link público é disparado manualmente pelo gestor via mala direta externa.
 

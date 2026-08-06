@@ -20,6 +20,16 @@ const configuracaoRoutes = require('./src/routes/configuracao.routes');
 const { errorHandler, notFoundHandler } = require('./src/middlewares/errorHandler');
 
 const app = express();
+
+// O Railway (e qualquer plataforma em nuvem) coloca a aplicação atrás de um
+// proxy reverso, que adiciona o cabeçalho X-Forwarded-For com o IP real de
+// quem está acessando. Sem confiar nesse primeiro salto, o Express usa o IP
+// do próprio proxy pra tudo — e o express-rate-limit (login + rotas públicas)
+// trataria todo mundo como se fosse uma pessoa só, podendo bloquear gente de
+// verdade por engano. "1" = confia só no primeiro proxy à frente da aplicação,
+// que é exatamente o cenário do Railway (não expõe a aplicação a spoofing de
+// IP por quem não está nessa posição).
+app.set('trust proxy', 1);
 const PORT = process.env.PORT || 3000;
 
 // ---------- Segurança e infraestrutura básica ----------
