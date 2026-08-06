@@ -189,10 +189,13 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;}
       if (pesquisa.logoUrl) {
         const logoImg = document.getElementById('pf-logo-org');
         const logoPadrao = document.getElementById('pf-logo-padrao');
-        logoImg.src = pesquisa.logoUrl;
-        logoImg.alt = pesquisa.organizacaoNome || 'Logo';
+        // Os handlers precisam ser anexados ANTES de definir o src — se a imagem
+        // carregar rápido (ex: já em cache), o evento "load" pode disparar antes
+        // do onload ser anexado, e a logo nunca aparece (bug real encontrado).
         logoImg.onload = () => { logoImg.style.display = 'block'; logoPadrao.style.display = 'none'; };
         logoImg.onerror = () => { logoImg.style.display = 'none'; logoPadrao.style.display = 'block'; };
+        logoImg.alt = pesquisa.organizacaoNome || 'Logo';
+        logoImg.src = pesquisa.logoUrl;
       }
 
       document.getElementById('tela-carregando').style.display = 'none';
