@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SIGESC — Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body data-app-version="1.0">
+  <div class="app-shell">
+    <div class="sidebar" id="sidebar">
+      <div class="brand">
+        <svg viewBox="0 0 40 40" width="26" height="26" fill="none"><circle cx="20" cy="20" r="19" stroke="#00B4A6" stroke-width="2.2"/><path d="M9 22 L14 22 L16.5 17 L19 26 L21.5 19 L24 22 L31 22" stroke="#00B4A6" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span class="brand-text">SIGESC</span>
+      </div>
+      <div class="side-role">
+        <div class="name" id="side-role-name">—</div>
+        <span class="tag-role" id="side-role-tag">—</span>
+      </div>
+      <div class="side-nav">
+        <button class="active">📊 Dashboard</button>
+        <button disabled title="Disponível no Sprint 2" style="opacity:.4;cursor:not-allowed;">📋 Pesquisas</button>
+        <button disabled title="Disponível no Sprint 3" style="opacity:.4;cursor:not-allowed;">💬 Respostas</button>
+        <button disabled title="Disponível no Sprint 6" style="opacity:.4;cursor:not-allowed;">🛡️ LGPD</button>
+        <button disabled title="Disponível no Sprint 6" style="opacity:.4;cursor:not-allowed;">👥 Usuários</button>
+        <button disabled title="Disponível no Sprint 6" style="opacity:.4;cursor:not-allowed;">⚙️ Configurações</button>
+      </div>
+      <div class="side-foot">
+        <button id="btn-logout">↩ Sair</button>
+      </div>
+    </div>
+
+    <div class="main">
+      <div class="topbar">
+        <div>
+          <h2>Dashboard</h2>
+          <div class="sub">Sprint 1 — fundação do sistema</div>
+        </div>
+      </div>
+      <div class="content">
+        <div class="empty-state">
+          <div class="icon">📊</div>
+          <h3>Login funcionando — bem-vindo(a), <span id="nome-usuario">...</span>!</h3>
+          <p>Os dados de pesquisas, respostas e indicadores entram nas próximas sprints. Esta tela confirma que a autenticação, o banco de dados e a sessão estão funcionando de ponta a ponta.</p>
+        </div>
+        <div id="app-footer"></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/footer.js"></script>
+  <script>
+    inserirRodape('app-footer', false);
+
+    const token = localStorage.getItem('sigesc_token');
+    if (!token) {
+      window.location.href = '/login.html';
+    }
+
+    // Valida a sessão de verdade contra a API (não confia só no que está no localStorage).
+    (async () => {
+      try {
+        const resp = await fetch('/api/auth/me', {
+          headers: { Authorization: 'Bearer ' + token },
+        });
+        if (!resp.ok) {
+          localStorage.removeItem('sigesc_token');
+          localStorage.removeItem('sigesc_usuario');
+          window.location.href = '/login.html';
+          return;
+        }
+        const data = await resp.json();
+        const usuario = data.usuario;
+
+        document.getElementById('side-role-name').textContent = usuario.nome;
+        document.getElementById('side-role-tag').textContent = usuario.perfil === 'gestor' ? 'Gestor' : 'Usuário';
+        document.getElementById('nome-usuario').textContent = usuario.nome;
+      } catch (err) {
+        localStorage.removeItem('sigesc_token');
+        window.location.href = '/login.html';
+      }
+    })();
+
+    document.getElementById('btn-logout').addEventListener('click', () => {
+      localStorage.removeItem('sigesc_token');
+      localStorage.removeItem('sigesc_usuario');
+      window.location.href = '/login.html';
+    });
+  </script>
+</body>
+</html>

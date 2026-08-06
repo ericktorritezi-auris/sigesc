@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SIGESC — Acessar plataforma</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body data-app-version="1.0">
+  <a href="/index.html" class="back-link">← Voltar</a>
+  <div class="login-page">
+    <div class="login-card">
+      <div class="login-brand">
+        <svg viewBox="0 0 40 40" width="30" height="30" fill="none"><circle cx="20" cy="20" r="19" stroke="#2563EB" stroke-width="2.2"/><path d="M9 22 L14 22 L16.5 17 L19 26 L21.5 19 L24 22 L31 22" stroke="#2563EB" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span style="font-weight:800;font-size:17px;color:#0D1B2A;">SIGESC</span>
+      </div>
+      <h2>Acessar plataforma</h2>
+      <p class="sub">Entre com seu e-mail e senha</p>
+
+      <div class="error-box" id="login-error"></div>
+
+      <form id="login-form">
+        <div class="field">
+          <label>E-mail</label>
+          <input type="email" id="email" name="email" required autocomplete="username">
+        </div>
+        <div class="field">
+          <label>Senha</label>
+          <input type="password" id="senha" name="senha" required autocomplete="current-password">
+        </div>
+        <button type="submit" class="btn btn-primary btn-block" id="btn-login">Entrar</button>
+      </form>
+      <p class="login-foot">SIGESC — acesso restrito a usuários cadastrados</p>
+    </div>
+  </div>
+  <div id="public-footer" style="text-align:center;margin-top:16px;"></div>
+
+  <script src="/js/footer.js"></script>
+  <script>
+    inserirRodape('public-footer', true);
+
+    const form = document.getElementById('login-form');
+    const errorBox = document.getElementById('login-error');
+    const btnLogin = document.getElementById('btn-login');
+
+    // Se já existe um token válido guardado, pula direto para o app.
+    if (localStorage.getItem('sigesc_token')) {
+      window.location.href = '/app/index.html';
+    }
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      errorBox.classList.remove('active');
+      btnLogin.disabled = true;
+      btnLogin.textContent = 'Entrando...';
+
+      const email = document.getElementById('email').value.trim();
+      const senha = document.getElementById('senha').value;
+
+      try {
+        const resp = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, senha }),
+        });
+        const data = await resp.json();
+
+        if (!resp.ok) {
+          errorBox.textContent = data.erro || 'Não foi possível entrar. Tente novamente.';
+          errorBox.classList.add('active');
+          btnLogin.disabled = false;
+          btnLogin.textContent = 'Entrar';
+          return;
+        }
+
+        localStorage.setItem('sigesc_token', data.token);
+        localStorage.setItem('sigesc_usuario', JSON.stringify(data.usuario));
+        window.location.href = '/app/index.html';
+      } catch (err) {
+        errorBox.textContent = 'Erro de conexão com o servidor. Tente novamente em instantes.';
+        errorBox.classList.add('active');
+        btnLogin.disabled = false;
+        btnLogin.textContent = 'Entrar';
+      }
+    });
+  </script>
+</body>
+</html>
