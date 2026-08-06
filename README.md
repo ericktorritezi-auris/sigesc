@@ -67,6 +67,8 @@ Organização (whitelabel)
 - **Perguntas travam automaticamente** assim que a pesquisa recebe a 1ª resposta — carteira de clientes e política de privacidade continuam editáveis depois disso.
 - **Duplicar pesquisa** cria uma cópia em rascunho com carteira e link próprios; o gestor escolhe se ela entra no mesmo Ciclo da original (consolida) ou num Ciclo novo (independente).
 - Índices são agregados **por mês civil** (`ano_mes`, fuso America/Sao_Paulo). Toda resposta nova dentro do mesmo mês entra como mais um dado na média daquele mês — não substitui respostas anteriores.
+- **Sem salvamento parcial no formulário público** — só existe gravação no banco quando a pessoa conclui os 7 blocos. Fechar no meio não deixa nenhum registro incompleto.
+- **Recusa de LGPD é sempre registrada**, mesmo sem resposta completa — é a única gravação que existe quando a pessoa não concorda com a política.
 - Um usuário pertence a exatamente um gestor. Não há perfil hierárquico acima do gestor na v1 (mas o schema já reserva o campo para isso no futuro).
 - Nenhum dado de pesquisa é enviado por e-mail pelo sistema — o link público é disparado manualmente pelo gestor via mala direta externa.
 
@@ -175,9 +177,16 @@ O projeto inclui scripts de regressão reais — usados para validar cada sprint
 # Bateria de testes da API de Pesquisas/Empresas (Sprint 2) — precisa do servidor rodando em localhost:3000
 bash tests/test_sprint2_api.sh
 
+# Bateria de testes do formulário público/LGPD (Sprint 3)
+bash tests/test_sprint3_api.sh
+
 # Teste funcional do wizard de pesquisas — simula um usuário navegando de ponta a ponta
 # (criar pesquisa, adicionar cliente, ativar, gerar link) contra a página HTML real
 node tests/test_wizard_frontend.js
+
+# Teste funcional do formulário público — simula uma pessoa respondendo de ponta a ponta
+# (aceitar LGPD, preencher identificação, responder os 4 blocos de score, enviar) contra a página HTML real
+node tests/test_formulario_publico_frontend.js
 ```
 
 Ambos assumem que o servidor já está rodando e que o seed do gestor inicial já foi executado.

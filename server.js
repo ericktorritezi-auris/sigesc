@@ -10,6 +10,7 @@ const healthRoutes = require('./src/routes/health.routes');
 const authRoutes = require('./src/routes/auth.routes');
 const empresaRoutes = require('./src/routes/empresa.routes');
 const pesquisaRoutes = require('./src/routes/pesquisa.routes');
+const publicoRoutes = require('./src/routes/publico.routes');
 const { errorHandler, notFoundHandler } = require('./src/middlewares/errorHandler');
 
 const app = express();
@@ -39,6 +40,13 @@ app.use('/health', healthRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/empresas', empresaRoutes);
 app.use('/api/pesquisas', pesquisaRoutes);
+app.use('/api/publico', publicoRoutes);
+
+// Link público amigável: /p/:slug serve a mesma página estática do formulário,
+// que descobre qual pesquisa mostrar lendo o slug direto da própria URL.
+app.get('/p/:slug', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'p.html'));
+});
 
 // ---------- Fallback para rotas não encontradas da API ----------
 app.use('/api', notFoundHandler);

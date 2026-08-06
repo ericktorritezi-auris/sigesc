@@ -38,7 +38,7 @@ const BLOCOS = [
       { texto: 'Nome completo', tipo: 'nome', obrigatoria: true },
       { texto: 'E-mail', tipo: 'email', obrigatoria: true },
       { texto: 'Cargo', tipo: 'texto_livre', obrigatoria: true },
-      { texto: '{ROTULO_ENTIDADE}', tipo: 'selecao', obrigatoria: true },
+      { texto: '{ROTULO_ENTIDADE}', tipo: 'selecao_cliente', obrigatoria: true },
       { texto: 'Secretaria / Departamento', tipo: 'selecao', obrigatoria: false },
       { texto: 'Qual solução você utiliza com maior frequência?', tipo: 'selecao', obrigatoria: false },
       {
