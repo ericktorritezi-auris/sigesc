@@ -21,4 +21,7 @@ router.delete('/:id/clientes/:clienteId', pesquisaController.deleteCliente);
 router.post('/:id/ativar', pesquisaController.postAtivar);
 router.post('/:id/duplicar', pesquisaController.postDuplicar);
 
+router.get('/:id/ciclo/evolucao', pesquisaController.getEvolucaoCiclo);
+router.get('/:id/ciclo/ranking', pesquisaController.getRankingCiclo);
+
 module.exports = router;

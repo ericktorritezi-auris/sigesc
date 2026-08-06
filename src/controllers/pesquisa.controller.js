@@ -1,4 +1,5 @@
 const pesquisaService = require('../services/pesquisa.service');
+const calculoService = require('../services/calculo.service');
 
 function tratarErro(err, res, next) {
   if (err instanceof pesquisaService.AppError) {
@@ -108,6 +109,26 @@ async function postDuplicar(req, res, next) {
   }
 }
 
+async function getEvolucaoCiclo(req, res, next) {
+  try {
+    const pesquisa = await pesquisaService.buscarDetalhe(req.usuario, req.params.id);
+    const evolucao = await calculoService.buscarEvolucaoCiclo(pesquisa.ciclo_id);
+    res.status(200).json({ cicloId: pesquisa.ciclo_id, cicloTitulo: pesquisa.ciclo.titulo, evolucao });
+  } catch (err) {
+    tratarErro(err, res, next);
+  }
+}
+
+async function getRankingCiclo(req, res, next) {
+  try {
+    const pesquisa = await pesquisaService.buscarDetalhe(req.usuario, req.params.id);
+    const resultado = await calculoService.buscarRankingClientesCiclo(pesquisa.ciclo_id, req.query.anoMes);
+    res.status(200).json({ cicloId: pesquisa.ciclo_id, cicloTitulo: pesquisa.ciclo.titulo, ...resultado });
+  } catch (err) {
+    tratarErro(err, res, next);
+  }
+}
+
 module.exports = {
   postPesquisa,
   getPesquisas,
@@ -120,4 +141,6 @@ module.exports = {
   deleteCliente,
   postAtivar,
   postDuplicar,
+  getEvolucaoCiclo,
+  getRankingCiclo,
 };

@@ -1,5 +1,6 @@
 const { pool, query } = require('../config/db');
 const { agoraSaoPaulo, anoMesDe } = require('../utils/datetime');
+const { processarResposta } = require('./calculo.service');
 
 class AppError extends Error {
   constructor(message, status = 400) {
@@ -138,8 +139,16 @@ async function registrarResposta(slug, payload, ipOrigem) {
 
     await client.query('UPDATE pesquisas SET perguntas_travadas = true WHERE id = $1', [pesquisa.id]);
 
+    // Motor de cálculo (Sprint 4): dispara logo após a gravação, na MESMA
+    // transação — se o cálculo falhar, a resposta inteira dá rollback junto.
+    const { scores, indicadorMensal } = await processarResposta(client, {
+      respostaId,
+      pesquisaClienteId: clienteId,
+      anoMes,
+    });
+
     await client.query('COMMIT');
-    return { respostaId, respondidoEm: agora, anoMes };
+    return { respostaId, respondidoEm: agora, anoMes, scores, indicadorMensal };
   } catch (err) {
     await client.query('ROLLBACK');
     throw err;

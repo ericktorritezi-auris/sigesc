@@ -69,6 +69,8 @@ Organização (whitelabel)
 - Índices são agregados **por mês civil** (`ano_mes`, fuso America/Sao_Paulo). Toda resposta nova dentro do mesmo mês entra como mais um dado na média daquele mês — não substitui respostas anteriores.
 - **Sem salvamento parcial no formulário público** — só existe gravação no banco quando a pessoa conclui os 7 blocos. Fechar no meio não deixa nenhum registro incompleto.
 - **Recusa de LGPD é sempre registrada**, mesmo sem resposta completa — é a única gravação que existe quando a pessoa não concorda com a política.
+- **Motor de cálculo**: ISA/ISE/IST/ISV/Score Geral calculados automaticamente a cada resposta concluída, dentro da mesma transação da gravação. O indicador mensal (`indicadores_mensais`) é sempre **recalculado do zero como média de todas as respostas do mês** — nunca um cálculo incremental que possa acumular erro de arredondamento.
+- **ISC é sempre no nível do Ciclo**, nunca da pesquisa isolada — soma todos os clientes de todas as pesquisas/empresas vinculadas àquele ciclo como uma fonte única de dados.
 - Um usuário pertence a exatamente um gestor. Não há perfil hierárquico acima do gestor na v1 (mas o schema já reserva o campo para isso no futuro).
 - Nenhum dado de pesquisa é enviado por e-mail pelo sistema — o link público é disparado manualmente pelo gestor via mala direta externa.
 
@@ -187,6 +189,10 @@ node tests/test_wizard_frontend.js
 # Teste funcional do formulário público — simula uma pessoa respondendo de ponta a ponta
 # (aceitar LGPD, preencher identificação, responder os 4 blocos de score, enviar) contra a página HTML real
 node tests/test_formulario_publico_frontend.js
+
+# Motor de cálculo (Sprint 4) — valida com valores conhecidos calculados manualmente
+# (ISA/ISE/IST/ISV/Score Geral por resposta, média mensal, consolidação de ISC no nível do Ciclo)
+node tests/test_sprint4_motor_calculo.js
 ```
 
 Ambos assumem que o servidor já está rodando e que o seed do gestor inicial já foi executado.
