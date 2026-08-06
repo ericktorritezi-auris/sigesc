@@ -73,7 +73,26 @@ async function calcularScoresResposta(client, respostaId) {
  * cada nova resposta faz o sistema recalcular a média do zero, garantindo
  * que o número está sempre exatamente correto, mesmo em caso de reprocessamento).
  */
+/**
+ * Recalcula o indicador mensal agregado (indicadores_mensais) de um cliente
+ * específico, dentro de um ano_mes específico — usando a MÉDIA de TODAS as
+ * respostas concluídas daquele cliente naquele mês (não é incremental:
+ * cada nova resposta faz o sistema recalcular a média do zero, garantindo
+ * que o número está sempre exatamente correto, mesmo em caso de reprocessamento).
+ *
+ * TRAVA DE CONCORRÊNCIA: usa pg_advisory_xact_lock chaveado por
+ * (pesquisa_cliente_id + ano_mes) para garantir que, se duas respostas do
+ * MESMO cliente no MESMO mês chegarem ao mesmo tempo (ex: vários respondentes
+ * de um município enviando quase simultaneamente), a segunda espera a
+ * primeira terminar antes de ler e recalcular a média — sem isso, a leitura
+ * de uma poderia não ver a escrita da outra ainda não confirmada, e uma
+ * sobrescreveria o resultado da outra (perda silenciosa de dado agregado,
+ * mesmo com a resposta individual gravada corretamente). A trava é liberada
+ * automaticamente no fim da transação — não precisa de destrava manual.
+ */
 async function atualizarIndicadorMensal(client, pesquisaClienteId, anoMes) {
+  await client.query('SELECT pg_advisory_xact_lock(hashtext($1))', [`${pesquisaClienteId}:${anoMes}`]);
+
   const { rows } = await client.query(
     `SELECT
        AVG(sc.isa)::numeric(4,2) AS isa,
