@@ -14,6 +14,12 @@
   --azul-profundo:#0D1B2A; --azul-institucional:#1B263B; --azul-inteligente:#2563EB;
   --verde-agua:#00B4A6; --verde-sucesso:#22C55E; --vermelho-critico:#EF4444;
   --cinza-claro:#F1F5F9; --cinza-medio:#64748B; --cinza-escuro:#334155;
+  /* Cores dinâmicas da organização (whitelabel) — o JS sobrescreve estas 3
+     variáveis quando a pesquisa tem cor_primaria/cor_secundaria configuradas
+     em Configurações. Sem configuração, caem nos valores padrão do SIGESC. */
+  --cor-primaria-dinamica:var(--azul-profundo);
+  --cor-primaria-dinamica-escura:var(--azul-institucional);
+  --cor-secundaria-dinamica:var(--azul-profundo);
 }
 *{box-sizing:border-box;}
 body{margin:0;font-family:'Poppins',sans-serif;color:var(--azul-profundo);}
@@ -29,7 +35,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;}
 
 .pf-shell{
   display:none;min-height:100vh;
-  background:linear-gradient(160deg,var(--azul-profundo),var(--azul-institucional));
+  background:linear-gradient(160deg,var(--cor-primaria-dinamica),var(--cor-primaria-dinamica-escura));
   padding:24px 16px 40px;
 }
 .pf-wrap{max-width:560px;margin:0 auto;}
@@ -45,7 +51,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;}
 
 .pf-step-tag{font-size:11px;font-weight:700;color:var(--azul-inteligente);text-transform:uppercase;letter-spacing:.07em;margin-bottom:4px;}
 .pf-indicador-nome{font-size:12px;color:var(--cinza-medio);font-weight:500;margin-bottom:8px;}
-.pf-card h3{font-size:19px;margin:0 0 8px;line-height:1.3;}
+.pf-card h3{font-size:19px;margin:0 0 8px;line-height:1.3;color:var(--cor-secundaria-dinamica);}
 .pf-card p.desc{color:var(--cinza-medio);font-size:13.5px;margin:0 0 22px;line-height:1.55;}
 
 .pf-field{margin-bottom:22px;}
@@ -155,6 +161,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;}
   let dadosIdentificacao = { clienteId: '', nomeCompleto: '', email: '', cargo: '' };
   let camposExtrasIdentificacao = {}; // perguntaId -> valorTexto (secretaria/solucao/perfil)
   let recaptchaWidgetId = null;
+  let corSecundariaAtual = null;
   let recaptchaSiteKey = null;
 
   const NOME_INDICADOR = {
@@ -170,6 +177,29 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;}
     document.getElementById('tela-erro').style.display = 'flex';
   }
 
+  function escurecerHex(hex, fator) {
+    // Escurece uma cor hex multiplicando cada canal — usado pro degradê de
+    // fundo ter dois tons (igual o padrão azul-profundo → azul-institucional).
+    const h = (hex || '#0D1B2A').replace('#', '');
+    const r = Math.round(parseInt(h.substring(0, 2), 16) * fator);
+    const g = Math.round(parseInt(h.substring(2, 4), 16) * fator);
+    const b = Math.round(parseInt(h.substring(4, 6), 16) * fator);
+    const clamp = (v) => Math.max(0, Math.min(255, v)).toString(16).padStart(2, '0');
+    return `#${clamp(r)}${clamp(g)}${clamp(b)}`;
+  }
+
+  function aplicarCoresOrganizacao(pesquisa) {
+    const raiz = document.documentElement.style;
+    if (pesquisa.corPrimaria) {
+      raiz.setProperty('--cor-primaria-dinamica', pesquisa.corPrimaria);
+      raiz.setProperty('--cor-primaria-dinamica-escura', escurecerHex(pesquisa.corPrimaria, 0.65));
+    }
+    if (pesquisa.corSecundaria) {
+      raiz.setProperty('--cor-secundaria-dinamica', pesquisa.corSecundaria);
+      corSecundariaAtual = pesquisa.corSecundaria;
+    }
+  }
+
   async function iniciar() {
     if (!slug) { mostrarErro('Link inválido.'); return; }
 
@@ -180,6 +210,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;}
 
       pesquisa = data.pesquisa;
       recaptchaSiteKey = pesquisa.recaptchaHabilitado ? pesquisa.recaptchaSiteKey : null;
+      aplicarCoresOrganizacao(pesquisa);
       document.getElementById('pf-titulo-pesquisa').textContent = pesquisa.titulo;
       document.title = pesquisa.titulo + ' — Pesquisa de Satisfação';
 
@@ -391,6 +422,15 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;}
     html += `</div>`;
 
     document.getElementById('pf-card').innerHTML = html;
+
+    // Aplicação direta via JS, além da variável CSS — garante que a cor
+    // secundária funciona mesmo em motores de navegador com suporte
+    // inconsistente a variáveis CSS (não é possível confirmar 100% neste
+    // ambiente de teste, então reforçamos com os dois mecanismos juntos).
+    if (corSecundariaAtual) {
+      const titulo = document.querySelector('.pf-card h3');
+      if (titulo) titulo.style.color = corSecundariaAtual;
+    }
 
     if (bloco.tipo_bloco === 'orientacoes' && recaptchaSiteKey && window.grecaptcha) {
       // sem recaptcha na recusa (ver publico.controller.js) — mantido simples de propósito

@@ -43,13 +43,14 @@ async function buscarPesquisaPublica(slug) {
   // Também é aqui que os toggles de Configurações (IA/reCAPTCHA) chegam até
   // o formulário público — sem isso, o toggle da tela não teria efeito real.
   const { rows: orgRows } = await query(
-    `SELECT o.nome AS organizacao_nome, o.logo_url, o.recaptcha_habilitado, o.ia_analise_habilitada
+    `SELECT o.nome AS organizacao_nome, o.logo_url, o.recaptcha_habilitado, o.ia_analise_habilitada,
+            o.cor_primaria, o.cor_secundaria
      FROM usuarios u
      JOIN organizacoes o ON o.id = u.organizacao_id
      WHERE u.id = $1`,
     [pesquisa.gestor_id]
   );
-  const organizacao = orgRows[0] || { organizacao_nome: null, logo_url: null, recaptcha_habilitado: true, ia_analise_habilitada: true };
+  const organizacao = orgRows[0] || { organizacao_nome: null, logo_url: null, recaptcha_habilitado: true, ia_analise_habilitada: true, cor_primaria: null, cor_secundaria: null };
 
   const recaptchaHabilitado = Boolean(organizacao.recaptcha_habilitado) && Boolean(process.env.RECAPTCHA_SECRET_KEY);
 
@@ -61,6 +62,8 @@ async function buscarPesquisaPublica(slug) {
     clientes,
     organizacaoNome: organizacao.organizacao_nome,
     logoUrl: organizacao.logo_url,
+    corPrimaria: organizacao.cor_primaria,
+    corSecundaria: organizacao.cor_secundaria,
     recaptchaHabilitado,
     recaptchaSiteKey: recaptchaHabilitado ? process.env.RECAPTCHA_SITE_KEY : null,
   };
