@@ -74,6 +74,7 @@ Organização (whitelabel)
 - **ISC é sempre no nível do Ciclo**, nunca da pesquisa isolada — soma todos os clientes de todas as pesquisas/empresas vinculadas àquele ciclo como uma fonte única de dados.
 - **Dashboard sempre consolidado** — sem filtro por empresa. O gestor escolhe qual Ciclo visualizar (se tiver mais de um), e a partir daí tudo é somado: ranking, distribuição de saúde, perfil de respondentes.
 - **Administrador não é uma linha no banco** — existe só como variáveis de ambiente (`ADMIN_EMAIL`/`ADMIN_PASSWORD`), permanentes. É por isso que ele nunca é afetado por um reset total do sistema. Sua única função é criar/editar/desativar Gestores, exportar backup e resetar — nunca toca em Pesquisas, Empresas, etc (bloqueado explicitamente).
+- **PDF do relatório executivo é gerado 100% em JavaScript** (biblioteca PDFKit) — sem depender de nenhum binário externo instalado no servidor, o que garante que funciona igual no Railway e em qualquer ambiente Node padrão.
 - Um usuário pertence a exatamente um gestor. Não há perfil hierárquico acima do gestor na v1 (mas o schema já reserva o campo para isso no futuro).
 - Nenhum dado de pesquisa é enviado por e-mail pelo sistema — o link público é disparado manualmente pelo gestor via mala direta externa.
 
@@ -206,6 +207,9 @@ bash tests/test_sprint6_api.sh
 
 # Teste funcional do Painel do Administrador — CRUD de gestores, backup, reset
 node tests/test_admin_frontend.js
+
+# Teste funcional do Modo Apresentação (TV) e Exportação de PDF
+node tests/test_tv_pdf_frontend.js
 ```
 
 Ambos assumem que o servidor já está rodando e que o seed do gestor inicial já foi executado.
