@@ -9,8 +9,9 @@ async function seedAdmin() {
   const organizacaoNome = process.env.SEED_ORGANIZACAO_NOME || 'Organização Padrão';
 
   if (!email || !senha) {
-    console.error('[SIGESC][SEED] SEED_ADMIN_EMAIL e SEED_ADMIN_PASSWORD são obrigatórios.');
-    process.exit(1);
+    console.log('[SIGESC][SEED] SEED_ADMIN_EMAIL/SEED_ADMIN_PASSWORD não configuradas — pulando seed (comportamento esperado após o primeiro login).');
+    await pool.end();
+    return;
   }
 
   console.log('[SIGESC][SEED] Iniciando seed do usuário Gestor inicial...');

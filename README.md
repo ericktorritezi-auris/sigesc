@@ -132,13 +132,16 @@ sigesc/
 
 ## 🚀 Primeiro deploy — checklist
 
+O próprio sistema roda as migrations e o seed automaticamente a cada deploy (comando `npm start` já encadeia os três passos). **Você não precisa rodar nenhum comando manual no terminal do Railway ou no seu computador.**
+
 1. Criar repositório no GitHub e conectar ao Railway
 2. Criar serviço PostgreSQL no Railway (gera `DATABASE_URL` automaticamente)
 3. Configurar todas as variáveis de ambiente (seção acima)
 4. Configurar domínio customizado `sigesc.belleplanner.com.br` (CNAME)
-5. Rodar migrations
-6. Rodar seed do usuário Gestor inicial (`SEED_ADMIN_EMAIL` / `SEED_ADMIN_PASSWORD` — remover do Railway após o primeiro login)
-7. Validar rota `/health` retornando 200
+5. Fazer `git push` — o Railway builda e, ao iniciar (`npm start`), o sistema sozinho: cria as tabelas que ainda não existem (não recria as que já existem) e cria o usuário Gestor inicial usando `SEED_ADMIN_EMAIL`/`SEED_ADMIN_PASSWORD` (só na primeira vez — depois disso, ele detecta que o usuário já existe e não faz nada)
+6. Acessar `https://sigesc.belleplanner.com.br/login.html` e entrar com as credenciais do seed
+7. Depois de confirmar que o login funciona, pode remover `SEED_ADMIN_EMAIL`/`SEED_ADMIN_PASSWORD` do Railway com segurança — o sistema simplesmente pula essa etapa nos próximos deploys, sem quebrar nada
+8. Validar rota `/health` retornando 200
 
 ---
 
