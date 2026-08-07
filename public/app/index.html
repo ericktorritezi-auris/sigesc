@@ -46,7 +46,7 @@
         </div>
         <a href="/app/configuracoes.html">⚙️ Configurações</a>
       </div>
-      <div class="side-foot"><a href="/app/perfil.html" style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:9px;">👤 Meu Perfil</a><button id="btn-logout">↩ Sair</button></div>
+      <div class="side-foot"><a href="/app/perfil.html">👤 Meu Perfil</a><button id="btn-logout">↩ Sair</button></div>
     </div>
 
     <div class="main">
@@ -359,20 +359,22 @@
 
       if (evolucao.length === 0) { svg.innerHTML = ''; labels.innerHTML = ''; return; }
 
-      const w = 600, h = 200, pad = 10;
+      const w = 600, h = 200, pad = 22;
       const max = 10;
       const pontos = evolucao.map((e, i) => {
         const x = evolucao.length === 1 ? w / 2 : pad + (i / (evolucao.length - 1)) * (w - pad * 2);
-        const y = h - pad - (Number(e.isc) / max) * (h - pad * 2);
-        return `${x},${y}`;
+        const y = h - 10 - (Number(e.isc) / max) * (h - pad - 10);
+        return { x, y, valor: Number(e.isc) };
       });
+      const pontosStr = pontos.map((p) => `${p.x},${p.y}`).join(' ');
 
       svg.innerHTML = `
         <line x1="0" y1="${h * 0.25}" x2="${w}" y2="${h * 0.25}" stroke="#F1F5F9" stroke-width="1"/>
         <line x1="0" y1="${h * 0.5}" x2="${w}" y2="${h * 0.5}" stroke="#F1F5F9" stroke-width="1"/>
         <line x1="0" y1="${h * 0.75}" x2="${w}" y2="${h * 0.75}" stroke="#F1F5F9" stroke-width="1"/>
-        <polyline points="${pontos.join(' ')}" fill="none" stroke="#2563EB" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
-        ${pontos.map(p => `<circle cx="${p.split(',')[0]}" cy="${p.split(',')[1]}" r="4" fill="#2563EB"/>`).join('')}
+        <polyline points="${pontosStr}" fill="none" stroke="#2563EB" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+        ${pontos.map((p) => `<circle cx="${p.x}" cy="${p.y}" r="4" fill="#2563EB"/>
+          <text x="${p.x}" y="${p.y - 10}" text-anchor="middle" font-size="11" font-weight="700" fill="#2563EB">${p.valor.toFixed(1).replace('.', ',')}</text>`).join('')}
       `;
       labels.innerHTML = evolucao.map(e => `<span>${formatMes(e.ano_mes)}</span>`).join('');
     }
@@ -515,7 +517,7 @@
       document.getElementById('tv-overlay').classList.add('active');
       tvIndex = 0;
       mostrarSlideTV(0);
-      tvTimer = setInterval(() => { tvIndex = (tvIndex + 1) % 4; mostrarSlideTV(tvIndex); }, 6500);
+      tvTimer = setInterval(() => { tvIndex = (tvIndex + 1) % 6; mostrarSlideTV(tvIndex); }, 6500);
     }
     function pararTV() {
       document.getElementById('tv-overlay').classList.remove('active');
@@ -552,14 +554,15 @@
       const evo = data.evolucaoMensal;
       const svg = document.getElementById('tv-chart-evolucao');
       if (evo.length > 0) {
-        const w = 700, h = 220, pad = 10;
+        const w = 700, h = 220, pad = 26;
         const pontos = evo.map((e, i) => {
           const x = evo.length === 1 ? w / 2 : pad + (i / (evo.length - 1)) * (w - pad * 2);
-          const y = h - pad - (Number(e.isc) / 10) * (h - pad * 2);
-          return `${x},${y}`;
+          const y = h - 10 - (Number(e.isc) / 10) * (h - pad - 10);
+          return { x, y, valor: Number(e.isc) };
         });
-        svg.innerHTML = `<polyline points="${pontos.join(' ')}" fill="none" stroke="#00B4A6" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
-          ${pontos.map((p) => `<circle cx="${p.split(',')[0]}" cy="${p.split(',')[1]}" r="6" fill="#00B4A6"/>`).join('')}`;
+        svg.innerHTML = `<polyline points="${pontos.map((p) => `${p.x},${p.y}`).join(' ')}" fill="none" stroke="#00B4A6" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+          ${pontos.map((p) => `<circle cx="${p.x}" cy="${p.y}" r="6" fill="#00B4A6"/>
+            <text x="${p.x}" y="${p.y - 14}" text-anchor="middle" font-size="14" font-weight="700" fill="#00B4A6">${p.valor.toFixed(1).replace('.', ',')}</text>`).join('')}`;
         document.getElementById('tv-chart-labels').innerHTML = evo.map((e) => `<span>${formatMes(e.ano_mes)}</span>`).join('');
       }
 
@@ -617,25 +620,27 @@
             <h3>${pior.nome_cliente}</h3>
             <p>${pior.empresa_nome} · Score Geral atual</p>
           </div>
-          <svg viewBox="0 0 260 90" class="tv-destaque-mini-chart" id="tv-destaque-chart"></svg>
+          <svg viewBox="0 0 260 100" class="tv-destaque-mini-chart" id="tv-destaque-chart"></svg>
         </div>`;
 
       try {
         const historico = await apiFetch(`/api/ciclos/${cicloAtualId}/clientes/${pior.pesquisa_cliente_id}/historico`);
         const pontos = historico.historico;
-        const w = 260, h = 90, pad = 6;
+        const w = 260, h = 90, pad = 10;
         if (pontos.length > 1) {
           const coords = pontos.map((p, i) => {
             const x = pad + (i / (pontos.length - 1)) * (w - pad * 2);
-            const y = h - pad - (Number(p.score_geral) / 10) * (h - pad * 2);
-            return `${x},${y}`;
+            const y = h - 10 - (Number(p.score_geral) / 10) * (h - pad - 10);
+            return { x, y, valor: Number(p.score_geral) };
           });
-          document.getElementById('tv-destaque-chart').innerHTML = `<polyline points="${coords.join(' ')}" fill="none" stroke="${cor}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
-            ${coords.map((c) => `<circle cx="${c.split(',')[0]}" cy="${c.split(',')[1]}" r="3.5" fill="${cor}"/>`).join('')}`;
+          document.getElementById('tv-destaque-chart').innerHTML = `<polyline points="${coords.map((c) => `${c.x},${c.y}`).join(' ')}" fill="none" stroke="${cor}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+            ${coords.map((c) => `<circle cx="${c.x}" cy="${c.y}" r="3.5" fill="${cor}"/>
+              <text x="${c.x}" y="${c.y - 8}" text-anchor="middle" font-size="9.5" font-weight="700" fill="${cor}">${c.valor.toFixed(1).replace('.', ',')}</text>`).join('')}`;
         } else if (pontos.length === 1) {
           // só 1 mês de histórico ainda — mostra o ponto único, não uma linha vazia
-          const y = h - pad - (Number(pontos[0].score_geral) / 10) * (h - pad * 2);
-          document.getElementById('tv-destaque-chart').innerHTML = `<circle cx="${w / 2}" cy="${y}" r="5" fill="${cor}"/>`;
+          const y = h - 10 - (Number(pontos[0].score_geral) / 10) * (h - pad - 10);
+          document.getElementById('tv-destaque-chart').innerHTML = `<circle cx="${w / 2}" cy="${y}" r="5" fill="${cor}"/>
+            <text x="${w / 2}" y="${y - 10}" text-anchor="middle" font-size="10" font-weight="700" fill="${cor}">${Number(pontos[0].score_geral).toFixed(1).replace('.', ',')}</text>`;
         }
       } catch (err) { /* mini-gráfico é só um extra — se falhar, o slide continua funcionando sem ele */ }
     }

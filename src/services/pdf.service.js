@@ -233,7 +233,11 @@ function gerarRelatorioPDF({ cicloTitulo, organizacaoNome, gestorNome, versao, d
       doc.moveTo(pontos[0][0], pontos[0][1]);
       for (let i = 1; i < pontos.length; i++) doc.lineTo(pontos[i][0], pontos[i][1]);
       doc.lineWidth(3).stroke(CORES.verdeAgua);
-      pontos.forEach(([x, y]) => doc.circle(x, y, 4).fill(CORES.verdeAgua));
+      pontos.forEach(([x, y], i) => {
+        doc.circle(x, y, 4).fill(CORES.verdeAgua);
+        const valorTexto = Number(evolucao[i].isc).toFixed(1).replace('.', ',');
+        doc.font('Helvetica-Bold').fontSize(11).fillColor(CORES.verdeAgua).text(valorTexto, x - 20, y - 20, { width: 40, align: 'center' });
+      });
 
       doc.font('Helvetica').fontSize(9).fillColor('#8FA0B8');
       evolucao.forEach((e, i) => {
@@ -367,7 +371,11 @@ function gerarRelatorioPDF({ cicloTitulo, organizacaoNome, gestorNome, versao, d
         doc.moveTo(pontos[0][0], pontos[0][1]);
         for (let i = 1; i < pontos.length; i++) doc.lineTo(pontos[i][0], pontos[i][1]);
         doc.lineWidth(2.5).stroke(CORES_DIMENSAO[chave]);
-        pontos.forEach(([x, y]) => doc.circle(x, y, 3).fill(CORES_DIMENSAO[chave]));
+        pontos.forEach(([x, y], i) => {
+          doc.circle(x, y, 3).fill(CORES_DIMENSAO[chave]);
+          const valorTexto = Number(evolucaoDim[i][chave]).toFixed(1).replace('.', ',');
+          doc.font('Helvetica-Bold').fontSize(8).fillColor(CORES_DIMENSAO[chave]).text(valorTexto, x - 16, y - 14, { width: 32, align: 'center' });
+        });
       });
 
       doc.font('Helvetica').fontSize(9).fillColor('#8FA0B8');
