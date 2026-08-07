@@ -165,7 +165,7 @@ O SIGESC pode ser instalado como aplicativo tanto no Android quanto no iPhone, d
 
 ## 🚀 Primeiro deploy — checklist
 
-O próprio sistema roda as migrations, o seed e a auto-recuperação de dados automaticamente a cada deploy (comando `npm start` já encadeia os quatro passos). **Você não precisa rodar nenhum comando manual no terminal do Railway ou no seu computador.**
+O próprio sistema roda as migrations, o seed, a auto-recuperação de scores órfãos e a limpeza de ciclos órfãos automaticamente a cada deploy (comando `npm start` já encadeia os cinco passos). **Você não precisa rodar nenhum comando manual no terminal do Railway ou no seu computador.**
 
 1. Criar repositório no GitHub e conectar ao Railway
 2. Criar serviço PostgreSQL no Railway (gera `DATABASE_URL` automaticamente)

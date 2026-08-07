@@ -383,9 +383,28 @@ async function inativarPesquisa(usuarioAutenticado, pesquisaId) {
  * clientes são todos apagados junto, via cascade do banco (nenhuma dessas
  * tabelas fica com registro órfão). Ação irreversível.
  */
+/**
+ * Exclui a pesquisa PERMANENTEMENTE — respostas, itens de resposta, scores,
+ * indicadores mensais, consentimentos LGPD, blocos, perguntas e carteira de
+ * clientes são todos apagados junto, via cascade do banco (nenhuma dessas
+ * tabelas fica com registro órfão). Ação irreversível.
+ *
+ * Também limpa o Ciclo: se essa era a ÚLTIMA pesquisa vinculada a ele, o
+ * ciclo fica vazio (0 pesquisas) e é apagado junto — senão ele ficaria
+ * "fantasma" na caixa de seleção do Dashboard pra sempre, com 0 clientes
+ * (bug real encontrado por Erick em 06/08/2026).
+ */
 async function excluirPesquisa(usuarioAutenticado, pesquisaId) {
-  await carregarPesquisaOuFalhar(usuarioAutenticado, pesquisaId);
+  const pesquisa = await carregarPesquisaOuFalhar(usuarioAutenticado, pesquisaId);
+  const cicloId = pesquisa.ciclo_id;
+
   await query('DELETE FROM pesquisas WHERE id = $1', [pesquisaId]);
+
+  const { rows } = await query('SELECT COUNT(*) FROM pesquisas WHERE ciclo_id = $1', [cicloId]);
+  if (parseInt(rows[0].count, 10) === 0) {
+    await query('DELETE FROM ciclos_pesquisa WHERE id = $1', [cicloId]);
+  }
+
   return { excluida: true };
 }
 

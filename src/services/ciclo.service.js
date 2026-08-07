@@ -27,6 +27,7 @@ async function listarCiclos(usuarioAutenticado) {
             (SELECT COUNT(DISTINCT pc.id) FROM pesquisa_clientes pc JOIN pesquisas p2 ON p2.id = pc.pesquisa_id WHERE p2.ciclo_id = c.id) AS total_clientes
      FROM ciclos_pesquisa c
      WHERE c.gestor_id = $1
+       AND EXISTS (SELECT 1 FROM pesquisas p3 WHERE p3.ciclo_id = c.id)
      ORDER BY c.created_at DESC`,
     [gestorId]
   );

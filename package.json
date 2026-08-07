@@ -7,11 +7,12 @@
     "node": ">=20.0.0"
   },
   "scripts": {
-    "start": "node migrations/run_migrations.js && node seeds/seed_admin.js && node scripts/backfill_indicadores.js && node server.js",
+    "start": "node migrations/run_migrations.js && node seeds/seed_admin.js && node scripts/backfill_indicadores.js && node scripts/limpar_ciclos_orfaos.js && node server.js",
     "dev": "node --watch server.js",
     "migrate": "node migrations/run_migrations.js",
     "seed": "node seeds/seed_admin.js",
     "backfill": "node scripts/backfill_indicadores.js",
+    "limpar-ciclos": "node scripts/limpar_ciclos_orfaos.js",
     "test": "node tests/run_tests.js"
   },
   "dependencies": {
