@@ -226,6 +226,11 @@ node tests/test_carga_concorrencia.js
 # Teste do ajuste geral (06/08/2026) — Empresas com identidade visual própria,
 # Inativar/Reativar/Excluir pesquisa, de ponta a ponta
 node tests/test_ajuste_geral.js
+
+# Testes do Sprint 10 (07/08/2026) — Meu Perfil, Relatórios (Por Cliente/Por
+# Dimensão), e os slides novos do Modo TV (Diagnóstico por Dimensão, Cliente em destaque)
+node tests/test_perfil_relatorios.js
+node tests/test_tv_slides_dimensao.js
 ```
 
 Ambos assumem que o servidor já está rodando e que o seed do gestor inicial já foi executado.
