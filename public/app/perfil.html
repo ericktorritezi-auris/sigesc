@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SIGESC — Meu Perfil [DEMO]</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body data-app-version="1.0">
+  <div class="app-shell">
+    <div class="sidebar-backdrop" id="sidebar-backdrop"></div>
+    <div class="sidebar" id="sidebar">
+      <button class="sidebar-close" id="sidebar-close" aria-label="Fechar menu">✕</button>
+      <div class="brand">
+        <svg viewBox="0 0 40 40" width="26" height="26" fill="none"><circle cx="20" cy="20" r="19" stroke="#00B4A6" stroke-width="2.2"/><path d="M9 22 L14 22 L16.5 17 L19 26 L21.5 19 L24 22 L31 22" stroke="#00B4A6" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span class="brand-text">SIGESC</span>
+      </div>
+      <div class="side-role"><div class="name" id="side-role-name">—</div><span class="tag-role" id="side-role-tag">—</span></div>
+      <div class="side-nav">
+        <a href="/app/index.html">📊 Dashboard</a>
+        <a href="/app/pesquisas.html">📋 Pesquisas</a>
+        <a href="/app/respostas.html">💬 Respostas</a>
+        <a href="/app/lgpd.html">🛡️ LGPD</a>
+        <a href="/app/empresas.html">🏢 Empresas</a>
+        <a href="/app/usuarios.html">👥 Usuários</a>
+        <div class="side-nav-grupo">
+          <button class="side-nav-toggle" id="toggle-relatorios">📈 Relatórios <span class="chev">▾</span></button>
+          <div class="side-nav-sub" id="sub-relatorios">
+            <a href="/app/relatorios.html?view=cliente">Por Cliente</a>
+            <a href="/app/relatorios.html?view=indicador">Por Dimensão</a>
+          </div>
+        </div>
+        <a href="/app/configuracoes.html">⚙️ Configurações</a>
+      </div>
+      <div class="side-foot">
+        <button class="active" style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:9px;width:100%;text-align:left;">👤 Meu Perfil</button>
+        <button>↩ Sair</button>
+      </div>
+    </div>
+
+    <div class="main">
+      <div class="topbar">
+        <div class="topbar-left">
+          <button class="menu-toggle" id="menu-toggle" aria-label="Abrir menu">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+          </button>
+          <div><h2>Meu Perfil</h2><div class="sub">Seus dados e preferências de acesso</div></div>
+        </div>
+      </div>
+
+      <div class="content">
+        <div id="msg-area"></div>
+
+        <div class="card" style="max-width:600px;margin-bottom:20px;">
+          <div class="perfil-avatar-row">
+            <div class="perfil-avatar" id="perfil-avatar">—</div>
+            <div>
+              <h3 style="font-size:17px;" id="perfil-nome">—</h3>
+              <span class="badge-perfil" id="perfil-badge">—</span>
+            </div>
+          </div>
+          <div class="detalhe-row"><span>E-mail</span><strong id="perfil-email">—</strong></div>
+          <div class="detalhe-row"><span>Grupo / Organização</span><strong id="perfil-organizacao">—</strong></div>
+          <div class="detalhe-row" id="perfil-gestor-row" style="display:none;"><span>Gestor responsável</span><strong id="perfil-gestor">—</strong></div>
+          <div class="detalhe-row"><span>Membro desde</span><strong id="perfil-desde">—</strong></div>
+        </div>
+
+        <div class="card" style="max-width:600px;">
+          <div class="card-head"><h3>Alterar senha</h3></div>
+          <p style="font-size:12.5px;color:var(--cinza-medio);margin-bottom:16px;">Se o administrador ou seu gestor criou seu acesso com uma senha padrão, troque aqui por uma senha só sua.</p>
+          <div class="field"><label>Senha atual</label><input type="password" id="senha-atual" placeholder="••••••••"></div>
+          <div class="field"><label>Nova senha</label><input type="password" id="nova-senha" placeholder="Mínimo 8 caracteres"></div>
+          <div class="field"><label>Confirmar nova senha</label><input type="password" id="confirmar-senha" placeholder="Repita a nova senha"></div>
+          <button class="btn btn-primary" id="btn-salvar-senha" style="padding:10px 22px;font-size:13px;">Salvar nova senha</button>
+        </div>
+
+        <div id="app-footer"></div>
+      </div>
+    </div>
+  </div>
+
+<style>
+  .card{background:#fff;border-radius:14px;padding:20px;box-shadow:var(--shadow);border:1px solid #EEF2F7;}
+  .card-head{margin-bottom:14px;}
+  .card-head h3{font-size:14.5px;}
+  .perfil-avatar-row{display:flex;align-items:center;gap:16px;margin-bottom:20px;padding-bottom:20px;border-bottom:1px solid #F1F5F9;}
+  .perfil-avatar{width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,var(--azul-inteligente),var(--verde-agua));color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:18px;flex-shrink:0;}
+  .badge-perfil{font-size:11px;font-weight:700;background:#EFF6FF;color:var(--azul-inteligente);padding:3px 10px;border-radius:20px;display:inline-block;margin-top:4px;}
+  .detalhe-row{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid #F1F5F9;font-size:13px;}
+  .detalhe-row:last-child{border-bottom:none;}
+  .field{margin-bottom:14px;}
+  .field label{display:block;font-size:12px;font-weight:600;color:var(--cinza-escuro);margin-bottom:6px;}
+  .field input{width:100%;padding:10px 12px;border:1.5px solid #E2E8F0;border-radius:9px;font-family:inherit;font-size:13px;}
+  .exemplo-usuario{opacity:.75;border-style:dashed;}
+</style>
+
+  <script src="/js/footer.js"></script>
+  <script src="/js/pwa.js"></script>
+  <script>
+    if (typeof inserirRodape === 'function') { inserirRodape('app-footer', false); }
+    const token = localStorage.getItem('sigesc_token');
+    if (!token) { window.location.href = '/login.html'; }
+
+    async function apiFetch(path, options = {}) {
+      const resp = await fetch(path, { ...options, headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token, ...(options.headers || {}) } });
+      if (resp.status === 401 && path !== '/api/perfil/senha') { localStorage.removeItem('sigesc_token'); window.location.href = '/login.html'; throw new Error('Sessão expirada'); }
+      const data = await resp.json();
+      if (!resp.ok) throw new Error(data.erro || 'Erro na requisição');
+      return data;
+    }
+    function mostrarMensagem(texto, tipo) {
+      const area = document.getElementById('msg-area');
+      area.innerHTML = `<div class="alert-box alert-${tipo}" style="padding:12px 16px;border-radius:10px;font-size:13px;font-weight:600;margin-bottom:16px;background:${tipo === 'error' ? '#FEE2E2' : '#DCFCE7'};color:${tipo === 'error' ? '#B91C1C' : '#15803D'};">${texto}</div>`;
+      setTimeout(() => { area.innerHTML = ''; }, 5000);
+    }
+
+    function iniciais(nome) {
+      return nome.split(' ').filter(Boolean).slice(0, 2).map((p) => p[0]).join('').toUpperCase();
+    }
+
+    async function carregarPerfil() {
+      try {
+        const { perfil } = await apiFetch('/api/perfil');
+        document.getElementById('perfil-avatar').textContent = iniciais(perfil.nome);
+        document.getElementById('perfil-nome').textContent = perfil.nome;
+        document.getElementById('perfil-badge').textContent = perfil.perfil === 'gestor' ? 'Gestor' : 'Usuário vinculado';
+        document.getElementById('perfil-email').textContent = perfil.email;
+        document.getElementById('perfil-organizacao').textContent = perfil.organizacao_nome;
+        document.getElementById('perfil-desde').textContent = new Date(perfil.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' });
+        if (perfil.perfil === 'usuario' && perfil.gestor_nome) {
+          document.getElementById('perfil-gestor-row').style.display = 'flex';
+          document.getElementById('perfil-gestor').textContent = perfil.gestor_nome;
+        }
+        document.getElementById('side-role-name').textContent = perfil.nome;
+        document.getElementById('side-role-tag').textContent = perfil.perfil === 'gestor' ? 'Gestor' : 'Usuário';
+      } catch (err) {
+        mostrarMensagem('Erro ao carregar perfil: ' + err.message, 'error');
+      }
+    }
+
+    document.getElementById('btn-salvar-senha').addEventListener('click', async () => {
+      const senhaAtual = document.getElementById('senha-atual').value;
+      const novaSenha = document.getElementById('nova-senha').value;
+      const confirmarSenha = document.getElementById('confirmar-senha').value;
+
+      if (!senhaAtual || !novaSenha || !confirmarSenha) { mostrarMensagem('Preencha todos os campos.', 'error'); return; }
+      if (novaSenha !== confirmarSenha) { mostrarMensagem('A confirmação não bate com a nova senha.', 'error'); return; }
+      if (novaSenha.length < 8) { mostrarMensagem('A nova senha precisa ter ao menos 8 caracteres.', 'error'); return; }
+
+      try {
+        await apiFetch('/api/perfil/senha', { method: 'PUT', body: JSON.stringify({ senhaAtual, novaSenha }) });
+        mostrarMensagem('Senha alterada com sucesso!', 'success');
+        document.getElementById('senha-atual').value = '';
+        document.getElementById('nova-senha').value = '';
+        document.getElementById('confirmar-senha').value = '';
+      } catch (err) {
+        mostrarMensagem(err.message, 'error');
+      }
+    });
+
+    const toggleBtn = document.getElementById('toggle-relatorios');
+    const subMenu = document.getElementById('sub-relatorios');
+    toggleBtn.addEventListener('click', () => {
+      toggleBtn.classList.toggle('aberto');
+      subMenu.classList.toggle('aberto');
+    });
+
+    (async () => {
+      try {
+        const resp = await fetch('/api/auth/me', { headers: { Authorization: 'Bearer ' + token } });
+        if (!resp.ok) { localStorage.removeItem('sigesc_token'); window.location.href = '/login.html'; return; }
+        const data = await resp.json();
+        if (data.usuario.perfil === 'administrador') { window.location.href = '/app/admin.html'; return; }
+      } catch (err) { window.location.href = '/login.html'; return; }
+      carregarPerfil();
+    })();
+
+    const sidebar = document.getElementById('sidebar');
+    const backdrop = document.getElementById('sidebar-backdrop');
+    document.getElementById('menu-toggle').addEventListener('click', () => { sidebar.classList.add('open'); backdrop.classList.add('open'); });
+    document.getElementById('sidebar-close').addEventListener('click', () => { sidebar.classList.remove('open'); backdrop.classList.remove('open'); });
+    backdrop.addEventListener('click', () => { sidebar.classList.remove('open'); backdrop.classList.remove('open'); });
+  </script>
+</body>
+</html>

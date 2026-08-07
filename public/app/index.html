@@ -37,9 +37,16 @@
         <a href="/app/lgpd.html">🛡️ LGPD</a>
         <a href="/app/empresas.html">🏢 Empresas</a>
         <a href="/app/usuarios.html">👥 Usuários</a>
+        <div class="side-nav-grupo">
+          <button class="side-nav-toggle" id="toggle-relatorios">📈 Relatórios <span class="chev">▾</span></button>
+          <div class="side-nav-sub" id="sub-relatorios">
+            <a href="/app/relatorios.html?view=cliente">Por Cliente</a>
+            <a href="/app/relatorios.html?view=indicador">Por Dimensão</a>
+          </div>
+        </div>
         <a href="/app/configuracoes.html">⚙️ Configurações</a>
       </div>
-      <div class="side-foot"><button id="btn-logout">↩ Sair</button></div>
+      <div class="side-foot"><a href="/app/perfil.html" style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:9px;">👤 Meu Perfil</a><button id="btn-logout">↩ Sair</button></div>
     </div>
 
     <div class="main">
@@ -136,6 +143,16 @@
       <div class="tv-title">Quem está respondendo nossas pesquisas</div>
       <div id="tv-perfil" style="display:flex;flex-direction:column;gap:16px;"></div>
     </div>
+    <div class="tv-slide" id="tv-slide-4">
+      <div class="tv-eyebrow">Diagnóstico por Dimensão</div>
+      <div class="tv-title" id="tv-dimensao-titulo">Onde a carteira precisa de mais atenção</div>
+      <div class="tv-dimensao-grid" id="tv-dimensao-grid"></div>
+    </div>
+    <div class="tv-slide" id="tv-slide-5">
+      <div class="tv-eyebrow">Cliente em destaque</div>
+      <div class="tv-title">Precisa de atenção agora</div>
+      <div id="tv-destaque"></div>
+    </div>
     <div class="tv-dots" id="tv-dots"></div>
   </div>
 
@@ -159,6 +176,17 @@
   .tv-dots{display:flex;gap:8px;justify-content:center;margin-top:20px;}
   .tv-dots span{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.25);}
   .tv-dots span.on{background:#00B4A6;}
+  .tv-dimensao-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:20px;}
+  .tv-dimensao-card{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:16px;padding:22px;}
+  .tv-dimensao-card .sigla{font-size:12px;font-weight:700;color:#00B4A6;letter-spacing:.05em;}
+  .tv-dimensao-card .val{font-size:32px;font-weight:800;margin:6px 0;}
+  .tv-dimensao-card .pior{font-size:12.5px;color:#B9C4D6;margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,.1);}
+  .tv-dimensao-card .pior strong{color:#fff;}
+  .tv-destaque-card{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:16px;padding:28px;display:flex;gap:28px;align-items:center;flex-wrap:wrap;}
+  .tv-destaque-score{font-size:52px;font-weight:800;flex-shrink:0;}
+  .tv-destaque-info h3{font-size:22px;margin-bottom:4px;}
+  .tv-destaque-info p{color:#B9C4D6;font-size:13.5px;margin-bottom:14px;}
+  .tv-destaque-mini-chart{width:260px;flex-shrink:0;}
   .tv-perfil-row .top{display:flex;justify-content:space-between;font-size:15px;margin-bottom:8px;}
   .tv-perfil-row .track{height:12px;background:rgba(255,255,255,.1);border-radius:10px;overflow:hidden;}
   .tv-perfil-row .fill{height:100%;border-radius:10px;}
@@ -540,7 +568,82 @@
         <div class="track"><div class="fill" style="width:${p.percentual}%;background:#2563EB;"></div></div></div>
       `).join('');
 
-      document.getElementById('tv-dots').innerHTML = [0, 1, 2, 3].map((i) => `<span id="tv-dot-${i}"></span>`).join('');
+      renderTVDimensao(data.ranking);
+      renderTVDestaque(data.ranking);
+
+      document.getElementById('tv-dots').innerHTML = [0, 1, 2, 3, 4, 5].map((i) => `<span id="tv-dot-${i}"></span>`).join('');
+    }
+
+    // Slide 5 — "Diagnóstico por Dimensão": reaproveita o MESMO ranking que já
+    // veio no dashboard (já traz isa/ise/ist/isv por cliente) — sem chamada
+    // de API extra, só reorganiza o que já está na memória.
+    function renderTVDimensao(ranking) {
+      const DIMENSOES = [
+        { chave: 'isa', label: 'Atendimento', sigla: 'ISA' },
+        { chave: 'ise', label: 'Infraestrutura', sigla: 'ISE' },
+        { chave: 'ist', label: 'Tecnologia', sigla: 'IST' },
+        { chave: 'isv', label: 'Valor Percebido', sigla: 'ISV' },
+      ];
+
+      const resultados = DIMENSOES.map((d) => {
+        const ordenado = [...ranking].sort((a, b) => Number(a[d.chave]) - Number(b[d.chave]));
+        const media = ranking.reduce((acc, r) => acc + Number(r[d.chave]), 0) / ranking.length;
+        return { ...d, media, pior: ordenado[0] };
+      });
+
+      const maisFraca = [...resultados].sort((a, b) => a.media - b.media)[0];
+      document.getElementById('tv-dimensao-titulo').textContent = `${maisFraca.label} é o ponto mais fraco da carteira`;
+
+      document.getElementById('tv-dimensao-grid').innerHTML = resultados.map((r) => `
+        <div class="tv-dimensao-card">
+          <div class="sigla">${r.sigla} · ${r.label}</div>
+          <div class="val" style="color:${corFaixa(r.media)};">${Number(r.media).toFixed(1).replace('.', ',')}</div>
+          <div class="pior">Pior colocado: <strong>${r.pior.nome_cliente}</strong> (${Number(r.pior[r.chave]).toFixed(1).replace('.', ',')})</div>
+        </div>
+      `).join('');
+    }
+
+    // Slide 6 — "Cliente em destaque": spotlight no cliente que mais precisa
+    // de atenção (último do ranking), com mini-gráfico da evolução dele.
+    async function renderTVDestaque(ranking) {
+      if (ranking.length === 0) return;
+      const pior = ranking[ranking.length - 1];
+      const cor = corFaixa(pior.score_geral);
+
+      document.getElementById('tv-destaque').innerHTML = `
+        <div class="tv-destaque-card">
+          <div class="tv-destaque-score" style="color:${cor};">${Number(pior.score_geral).toFixed(1).replace('.', ',')}</div>
+          <div class="tv-destaque-info">
+            <h3>${pior.nome_cliente}</h3>
+            <p>${pior.empresa_nome} · Score Geral atual</p>
+          </div>
+          <svg viewBox="0 0 260 90" class="tv-destaque-mini-chart" id="tv-destaque-chart"></svg>
+        </div>`;
+
+      try {
+        const historico = await apiFetch(`/api/ciclos/${cicloAtualId}/clientes/${pior.pesquisa_cliente_id}/historico`);
+        const pontos = historico.historico;
+        const w = 260, h = 90, pad = 6;
+        if (pontos.length > 1) {
+          const coords = pontos.map((p, i) => {
+            const x = pad + (i / (pontos.length - 1)) * (w - pad * 2);
+            const y = h - pad - (Number(p.score_geral) / 10) * (h - pad * 2);
+            return `${x},${y}`;
+          });
+          document.getElementById('tv-destaque-chart').innerHTML = `<polyline points="${coords.join(' ')}" fill="none" stroke="${cor}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+            ${coords.map((c) => `<circle cx="${c.split(',')[0]}" cy="${c.split(',')[1]}" r="3.5" fill="${cor}"/>`).join('')}`;
+        } else if (pontos.length === 1) {
+          // só 1 mês de histórico ainda — mostra o ponto único, não uma linha vazia
+          const y = h - pad - (Number(pontos[0].score_geral) / 10) * (h - pad * 2);
+          document.getElementById('tv-destaque-chart').innerHTML = `<circle cx="${w / 2}" cy="${y}" r="5" fill="${cor}"/>`;
+        }
+      } catch (err) { /* mini-gráfico é só um extra — se falhar, o slide continua funcionando sem ele */ }
+    }
+
+    const toggleBtnRelatorios = document.getElementById('toggle-relatorios');
+    const subMenuRelatorios = document.getElementById('sub-relatorios');
+    if (toggleBtnRelatorios) {
+      toggleBtnRelatorios.addEventListener('click', () => { toggleBtnRelatorios.classList.toggle('aberto'); subMenuRelatorios.classList.toggle('aberto'); });
     }
 
     const sidebar = document.getElementById('sidebar');

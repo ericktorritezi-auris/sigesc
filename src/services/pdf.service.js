@@ -291,7 +291,105 @@ function gerarRelatorioPDF({ cicloTitulo, organizacaoNome, gestorNome, versao, d
 
     rodape(doc, versao, false);
 
-    // ========== PÁGINA 6 — RECOMENDAÇÕES ==========
+    // ========== PÁGINA 6 — DIAGNÓSTICO POR DIMENSÃO ==========
+    doc.addPage({ size: [LARGURA, ALTURA], margin: 0 });
+    fundoClaro(doc);
+    marcaSigesc(doc, false);
+
+    doc.font('Helvetica-Bold').fontSize(11).fillColor(CORES.azulInteligente).text('DIAGNÓSTICO · ONDE ESTÁ A DOR ESPECIFICAMENTE', 40, 70);
+    doc.font('Helvetica-Bold').fontSize(22).fillColor(CORES.azulProfundo).text('Diagnóstico por Dimensão', 40, 96);
+    doc
+      .font('Helvetica')
+      .fontSize(10.5)
+      .fillColor(CORES.cinzaMedio)
+      .text('Diferente do ranking geral, aqui cada dimensão é olhada separadamente — o pior cliente numa dimensão específica pode não ser o pior no Score Geral.', 40, 128, { width: 860 });
+
+    const DIMENSOES_PDF = [
+      ['ISA', 'Atendimento', 'isa'],
+      ['ISE', 'Infraestrutura', 'ise'],
+      ['IST', 'Tecnologia', 'ist'],
+      ['ISV', 'Valor Percebido', 'isv'],
+    ];
+    const colX = [40, 260, 480, 700];
+    const colW = 200;
+
+    DIMENSOES_PDF.forEach(([sigla, label, chave], col) => {
+      const x = colX[col];
+      const ordenado = [...dashboard.ranking].sort((a, b) => Number(a[chave]) - Number(b[chave]));
+      const media = dashboard.ranking.reduce((acc, r) => acc + Number(r[chave]), 0) / dashboard.ranking.length;
+
+      doc.roundedRect(x, 170, colW, 300, 10).fill(CORES.cinzaClaro);
+      doc.font('Helvetica-Bold').fontSize(11).fillColor(CORES.cinzaMedio).text(`${sigla} · ${label}`, x + 16, 188, { width: colW - 32 });
+      doc.font('Helvetica-Bold').fontSize(28).fillColor(corFaixa(media)).text(Number(media).toFixed(1).replace('.', ','), x + 16, 206);
+      badge(doc, x + 16, 244, labelFaixa(media), corFaixa(media));
+
+      doc.font('Helvetica-Bold').fontSize(9).fillColor(CORES.cinzaEscuro).text('3 QUE MAIS PRECISAM DE ATENÇÃO', x + 16, 280, { width: colW - 32 });
+
+      ordenado.slice(0, 3).forEach((cli, i) => {
+        const y = 300 + i * 52;
+        const cor = corFaixa(cli[chave]);
+        doc.circle(x + 24, y + 8, 9).fill(cor);
+        doc.font('Helvetica-Bold').fontSize(9).fillColor(CORES.branco).text(String(i + 1), x + 20.5, y + 4);
+        doc.font('Helvetica-Bold').fontSize(9.5).fillColor(CORES.azulProfundo).text(cli.nome_cliente, x + 40, y, { width: colW - 56 });
+        doc.font('Helvetica').fontSize(8).fillColor(CORES.cinzaMedio).text(cli.empresa_nome, x + 40, y + 13, { width: colW - 56 });
+        doc.font('Helvetica-Bold').fontSize(11).fillColor(cor).text(Number(cli[chave]).toFixed(1).replace('.', ','), x + 40, y + 27);
+      });
+    });
+
+    rodape(doc, versao, false);
+
+    // ========== PÁGINA 7 — EVOLUÇÃO COMPARADA DAS 4 DIMENSÕES ==========
+    doc.addPage({ size: [LARGURA, ALTURA], margin: 0 });
+    fundoEscuro(doc);
+    marcaSigesc(doc, true);
+
+    doc.font('Helvetica-Bold').fontSize(11).fillColor(CORES.verdeAgua).text('EVOLUÇÃO COMPARADA · AS 4 DIMENSÕES JUNTAS', 40, 70);
+    doc.font('Helvetica-Bold').fontSize(24).fillColor(CORES.branco).text('Quem está melhorando, quem está piorando', 40, 96);
+
+    const evolucaoDim = dashboard.evolucaoMensal;
+    const CORES_DIMENSAO = { isa: '#2563EB', ise: CORES.verdeAgua, ist: CORES.amareloAtencao, isv: CORES.verdeSucesso };
+
+    if (evolucaoDim.length > 0) {
+      const chartX = 60, chartY = 160, chartW = 840, chartH = 260;
+      for (let g = 1; g <= 3; g++) {
+        const gy = chartY + (chartH / 4) * g;
+        doc.strokeOpacity(0.08);
+        doc.moveTo(chartX, gy).lineTo(chartX + chartW, gy).lineWidth(0.5).stroke(CORES.branco);
+        doc.strokeOpacity(1);
+      }
+
+      DIMENSOES_PDF.forEach(([sigla, label, chave]) => {
+        const pontos = evolucaoDim.map((e, i) => {
+          const x = evolucaoDim.length === 1 ? chartX + chartW / 2 : chartX + (i / (evolucaoDim.length - 1)) * chartW;
+          const y = chartY + chartH - (Number(e[chave]) / 10) * chartH;
+          return [x, y];
+        });
+        doc.moveTo(pontos[0][0], pontos[0][1]);
+        for (let i = 1; i < pontos.length; i++) doc.lineTo(pontos[i][0], pontos[i][1]);
+        doc.lineWidth(2.5).stroke(CORES_DIMENSAO[chave]);
+        pontos.forEach(([x, y]) => doc.circle(x, y, 3).fill(CORES_DIMENSAO[chave]));
+      });
+
+      doc.font('Helvetica').fontSize(9).fillColor('#8FA0B8');
+      evolucaoDim.forEach((e, i) => {
+        const x = evolucaoDim.length === 1 ? chartX + chartW / 2 : chartX + (i / (evolucaoDim.length - 1)) * chartW;
+        doc.text(formatMes(e.ano_mes), x - 15, chartY + chartH + 12);
+      });
+
+      // Legenda
+      let legX = chartX;
+      DIMENSOES_PDF.forEach(([sigla, label, chave]) => {
+        doc.circle(legX + 5, chartY + chartH + 40, 4).fill(CORES_DIMENSAO[chave]);
+        doc.font('Helvetica').fontSize(9.5).fillColor(CORES.branco).text(`${sigla} · ${label}`, legX + 14, chartY + chartH + 35);
+        legX += 190;
+      });
+    } else {
+      doc.font('Helvetica').fontSize(12).fillColor('#C9D3E0').text('Sem histórico mensal suficiente ainda.', 40, 200);
+    }
+
+    rodape(doc, versao, true);
+
+    // ========== PÁGINA 8 — RECOMENDAÇÕES ==========
     doc.addPage({ size: [LARGURA, ALTURA], margin: 0 });
     fundoEscuro(doc);
     marcaSigesc(doc, true);
@@ -336,15 +434,25 @@ function gerarRecomendacoes(dashboard) {
 
   if (dashboard.kpis) {
     const indicadores = [
-      ['ISA (Atendimento)', dashboard.kpis.isa],
-      ['ISE (Infraestrutura)', dashboard.kpis.ise],
-      ['IST (Tecnologia)', dashboard.kpis.ist],
-      ['ISV (Valor Percebido)', dashboard.kpis.isv],
+      ['ISA', 'Atendimento', dashboard.kpis.isa],
+      ['ISE', 'Infraestrutura', dashboard.kpis.ise],
+      ['IST', 'Tecnologia', dashboard.kpis.ist],
+      ['ISV', 'Valor Percebido', dashboard.kpis.isv],
     ];
-    const menor = indicadores.reduce((a, b) => (Number(a[1]) <= Number(b[1]) ? a : b));
+    const menor = indicadores.reduce((a, b) => (Number(a[2]) <= Number(b[2]) ? a : b));
+    const chaveMenor = menor[0].toLowerCase();
+
+    // Cita o(s) cliente(s) especificamente puxando aquela dimensão pra baixo —
+    // não só "essa dimensão está fraca", mas "está fraca por causa de quem".
+    const ordenadoPorDimensao = [...dashboard.ranking].sort((a, b) => Number(a[chaveMenor]) - Number(b[chaveMenor]));
+    const nomesPiores = ordenadoPorDimensao.slice(0, 2).map((c) => c.nome_cliente);
+    const complemento = nomesPiores.length
+      ? ` — puxada especialmente por ${nomesPiores.join(' e ')}.`
+      : ` — sinaliza a maior oportunidade de melhoria neste ciclo.`;
+
     recs.push({
-      titulo: `Atenção ao indicador ${menor[0]}`,
-      descricao: `É a dimensão com menor média entre todas (${Number(menor[1]).toFixed(1)}) — sinaliza a maior oportunidade de melhoria neste ciclo.`,
+      titulo: `Atenção ao indicador ${menor[0]} (${menor[1]})`,
+      descricao: `É a dimensão com menor média entre todas (${Number(menor[2]).toFixed(1)})${complemento}`,
     });
   }
 

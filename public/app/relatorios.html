@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SIGESC — Relatórios [DEMO]</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body data-app-version="1.0">
+  <div class="app-shell">
+    <div class="sidebar-backdrop" id="sidebar-backdrop"></div>
+    <div class="sidebar" id="sidebar">
+      <button class="sidebar-close" id="sidebar-close" aria-label="Fechar menu">✕</button>
+      <div class="brand">
+        <svg viewBox="0 0 40 40" width="26" height="26" fill="none"><circle cx="20" cy="20" r="19" stroke="#00B4A6" stroke-width="2.2"/><path d="M9 22 L14 22 L16.5 17 L19 26 L21.5 19 L24 22 L31 22" stroke="#00B4A6" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span class="brand-text">SIGESC</span>
+      </div>
+      <div class="side-role"><div class="name" id="side-role-name">—</div><span class="tag-role" id="side-role-tag">—</span></div>
+      <div class="side-nav">
+        <a href="/app/index.html">📊 Dashboard</a>
+        <a href="/app/pesquisas.html">📋 Pesquisas</a>
+        <a href="/app/respostas.html">💬 Respostas</a>
+        <a href="/app/lgpd.html">🛡️ LGPD</a>
+        <a href="/app/empresas.html">🏢 Empresas</a>
+        <a href="/app/usuarios.html">👥 Usuários</a>
+        <div class="side-nav-grupo">
+          <button class="side-nav-toggle aberto" id="toggle-relatorios">📈 Relatórios <span class="chev">▾</span></button>
+          <div class="side-nav-sub aberto" id="sub-relatorios">
+            <a href="#" data-view="cliente" id="link-cliente">Por Cliente</a>
+            <a href="#" data-view="indicador" id="link-indicador">Por Dimensão</a>
+          </div>
+        </div>
+        <a href="/app/configuracoes.html">⚙️ Configurações</a>
+      </div>
+      <div class="side-foot">
+        <a href="/app/perfil.html" style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:9px;">👤 Meu Perfil</a>
+        <button>↩ Sair</button>
+      </div>
+    </div>
+
+    <div class="main">
+      <div class="topbar">
+        <div class="topbar-left">
+          <button class="menu-toggle" id="menu-toggle" aria-label="Abrir menu">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+          </button>
+          <div><h2 id="titulo-pagina">Relatório por Cliente</h2><div class="sub" id="sub-pagina">Acompanhe a saúde de um cliente específico, de todas as suas pesquisas</div></div>
+        </div>
+      </div>
+
+      <div class="content">
+        <div id="msg-area"></div>
+
+        <div id="view-cliente">
+          <div class="card" style="margin-bottom:20px;">
+            <label style="display:block;font-size:12px;font-weight:600;color:var(--cinza-escuro);margin-bottom:8px;">Selecione o cliente</label>
+            <select id="select-cliente" style="width:100%;max-width:400px;padding:10px 12px;border:1.5px solid #E2E8F0;border-radius:9px;font-family:inherit;font-size:13.5px;"></select>
+          </div>
+
+          <div class="kpi-grid" id="cliente-kpis"></div>
+
+          <div class="grid-2">
+            <div class="card">
+              <div class="card-head"><h3>Evolução mensal deste cliente</h3></div>
+              <svg viewBox="0 0 600 200" width="100%" height="200" id="cliente-chart"></svg>
+              <div class="chart-x-labels" id="cliente-chart-labels"></div>
+            </div>
+            <div class="card">
+              <div class="card-head"><h3>Comparado com a média da carteira</h3></div>
+              <div id="cliente-comparacao"></div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-head"><h3>Resumo</h3></div>
+            <div class="detalhe-row"><span>Empresa</span><strong id="cliente-empresa">—</strong></div>
+            <div class="detalhe-row"><span>Total de respostas recebidas</span><strong id="cliente-total-respostas">—</strong></div>
+            <div class="detalhe-row"><span>Última resposta</span><strong id="cliente-ultima">—</strong></div>
+          </div>
+        </div>
+
+        <div id="view-indicador" style="display:none;">
+          <div class="card" style="margin-bottom:20px;">
+            <label style="display:block;font-size:12px;font-weight:600;color:var(--cinza-escuro);margin-bottom:10px;">Selecione a dimensão</label>
+            <div class="indicador-tabs" id="indicador-tabs"></div>
+          </div>
+
+          <div class="kpi-grid-single" id="indicador-media"></div>
+
+          <div class="grid-2">
+            <div class="card">
+              <div class="card-head"><h3>Evolução da média geral</h3></div>
+              <svg viewBox="0 0 600 200" width="100%" height="200" id="indicador-chart"></svg>
+              <div class="chart-x-labels" id="indicador-chart-labels"></div>
+            </div>
+            <div class="card">
+              <div class="card-head"><h3>Comparativo entre clientes</h3></div>
+              <svg viewBox="0 0 400 220" width="100%" height="220" id="indicador-bar"></svg>
+            </div>
+          </div>
+
+          <div class="table-wrap">
+            <div class="card-head" style="padding:16px 18px 0;"><h3 id="ranking-titulo">Ranking · Tecnologia</h3></div>
+            <table>
+              <thead><tr><th>#</th><th>Cliente</th><th>Empresa</th><th>Índice</th></tr></thead>
+              <tbody id="ranking-rows"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div id="app-footer"></div>
+      </div>
+    </div>
+  </div>
+
+<style>
+  .card{background:#fff;border-radius:14px;padding:20px;box-shadow:var(--shadow);border:1px solid #EEF2F7;margin-bottom:20px;}
+  .card-head{margin-bottom:14px;}
+  .card-head h3{font-size:14.5px;}
+  .grid-2{display:grid;grid-template-columns:1.4fr 1fr;gap:16px;margin-bottom:20px;}
+  @media(max-width:900px){.grid-2{grid-template-columns:1fr;}}
+
+  .kpi-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:20px;}
+  @media(max-width:900px){.kpi-grid{grid-template-columns:repeat(2,1fr);}}
+  .kpi-card{background:#fff;border-radius:14px;padding:16px;box-shadow:var(--shadow);border:1px solid #EEF2F7;}
+  .kpi-card .kpi-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;gap:6px;}
+  .kpi-card .kpi-label{font-size:11.5px;color:var(--cinza-medio);font-weight:600;}
+  .kpi-card .kpi-val{font-size:24px;font-weight:800;color:var(--azul-profundo);}
+
+  .kpi-grid-single{margin-bottom:20px;}
+  .kpi-media-card{background:#fff;border-radius:14px;padding:22px;box-shadow:var(--shadow);border:1px solid #EEF2F7;display:flex;align-items:center;gap:20px;max-width:340px;}
+  .kpi-media-card .val{font-size:38px;font-weight:800;}
+  .kpi-media-card .lbl{font-size:12.5px;color:var(--cinza-medio);font-weight:600;}
+
+  .badge{font-size:10px;font-weight:700;padding:3px 8px;border-radius:20px;display:inline-block;}
+  .badge-excelente{background:#DCFCE7;color:#15803D;}
+  .badge-saudavel{background:#DBEAFE;color:#1D4ED8;}
+  .badge-atencao{background:#FEF3C7;color:#B45309;}
+  .badge-critico{background:#FEE2E2;color:#B91C1C;}
+
+  .chart-x-labels{display:flex;justify-content:space-between;font-size:10.5px;color:var(--cinza-medio);margin-top:4px;padding:0 4px;}
+
+  .indicador-tabs{display:flex;gap:8px;flex-wrap:wrap;}
+  .indicador-tab{padding:9px 16px;border-radius:10px;background:var(--cinza-claro);color:var(--cinza-escuro);font-weight:600;font-size:13px;transition:.15s;}
+  .indicador-tab.ativo{background:var(--azul-inteligente);color:#fff;}
+
+  .comp-row{display:flex;align-items:center;gap:10px;margin-bottom:14px;}
+  .comp-label{width:110px;font-size:12.5px;color:var(--cinza-escuro);flex-shrink:0;}
+  .comp-track{flex:1;height:10px;background:var(--cinza-claro);border-radius:10px;overflow:hidden;}
+  .comp-fill{height:100%;border-radius:10px;}
+  .comp-val{width:36px;text-align:right;font-weight:700;font-size:13px;flex-shrink:0;}
+
+  .rank-pos-cell{width:28px;height:28px;border-radius:50%;color:#fff;font-weight:800;font-size:11.5px;display:flex;align-items:center;justify-content:center;}
+
+</style>
+
+  <script src="/js/footer.js"></script>
+  <script src="/js/pwa.js"></script>
+  <script>
+    if (typeof inserirRodape === 'function') { inserirRodape('app-footer', false); }
+    const token = localStorage.getItem('sigesc_token');
+    if (!token) { window.location.href = '/login.html'; }
+
+    async function apiFetch(path) {
+      const resp = await fetch(path, { headers: { Authorization: 'Bearer ' + token } });
+      if (resp.status === 401) { localStorage.removeItem('sigesc_token'); window.location.href = '/login.html'; throw new Error('Sessão expirada'); }
+      const data = await resp.json();
+      if (!resp.ok) throw new Error(data.erro || 'Erro na requisição');
+      return data;
+    }
+    function mostrarMensagem(texto, tipo) {
+      const area = document.getElementById('msg-area') || (() => { const d = document.createElement('div'); d.id = 'msg-area'; document.querySelector('.content').prepend(d); return d; })();
+      area.innerHTML = `<div class="alert-box" style="padding:12px 16px;border-radius:10px;font-size:13px;font-weight:600;margin-bottom:16px;background:${tipo === 'error' ? '#FEE2E2' : '#DCFCE7'};color:${tipo === 'error' ? '#B91C1C' : '#15803D'};">${texto}</div>`;
+    }
+
+    const INDICADORES = [
+      { chave: 'isa', label: 'Atendimento', sigla: 'ISA' },
+      { chave: 'ise', label: 'Infraestrutura', sigla: 'ISE' },
+      { chave: 'ist', label: 'Tecnologia', sigla: 'IST' },
+      { chave: 'isv', label: 'Valor Percebido', sigla: 'ISV' },
+    ];
+
+    function corFaixa(v) {
+      v = Number(v);
+      if (v >= 8.5) return '#22C55E';
+      if (v >= 7) return '#2563EB';
+      if (v >= 5) return '#F59E0B';
+      return '#EF4444';
+    }
+    function badgeFaixa(v) {
+      v = Number(v);
+      if (v >= 8.5) return '<span class="badge badge-excelente">Excelente</span>';
+      if (v >= 7) return '<span class="badge badge-saudavel">Saudável</span>';
+      if (v >= 5) return '<span class="badge badge-atencao">Atenção</span>';
+      return '<span class="badge badge-critico">Crítico</span>';
+    }
+    function fmt(v) { return v === null || v === undefined ? '—' : Number(v).toFixed(1).replace('.', ','); }
+    function formatMes(anoMes) {
+      if (!anoMes) return '';
+      const [ano, mes] = anoMes.split('-');
+      const nomes = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+      return nomes[parseInt(mes, 10) - 1] + '/' + ano.slice(2);
+    }
+
+    function desenharLinha(svgId, pontosOrdenados, cor) {
+      const svg = document.getElementById(svgId);
+      const valores = pontosOrdenados.map((p) => Number(p.valor));
+      if (valores.length === 0) { svg.innerHTML = ''; return; }
+      const w = 600, h = 170, pad = 10;
+      const pontos = valores.map((v, i) => {
+        const x = valores.length === 1 ? w / 2 : pad + (i / (valores.length - 1)) * (w - pad * 2);
+        const y = h - pad - (v / 10) * (h - pad * 2);
+        return [x, y];
+      });
+      let linhas = '';
+      for (let g = 1; g <= 3; g++) {
+        const gy = (h / 4) * g;
+        linhas += `<line x1="0" y1="${gy}" x2="${w}" y2="${gy}" stroke="#F1F5F9" stroke-width="1"/>`;
+      }
+      const pontosStr = pontos.map((p) => p.join(',')).join(' ');
+      svg.setAttribute('viewBox', `0 0 ${w} ${h + 30}`);
+      svg.innerHTML = `${linhas}<polyline points="${pontosStr}" fill="none" stroke="${cor}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+        ${pontos.map((p) => `<circle cx="${p[0]}" cy="${p[1]}" r="4" fill="${cor}"/>`).join('')}`;
+    }
+
+    // ============ RELATÓRIO POR CLIENTE ============
+    async function popularSelectClientes() {
+      try {
+        const { clientes } = await apiFetch('/api/relatorios/clientes');
+        const sel = document.getElementById('select-cliente');
+        if (clientes.length === 0) {
+          sel.innerHTML = '<option value="">Nenhum cliente com resposta ainda</option>';
+          return;
+        }
+        sel.innerHTML = clientes.map((c) => `<option value="${c.id}">${c.nome_cliente} (${c.empresa_nome})</option>`).join('');
+        sel.addEventListener('change', () => renderCliente(sel.value));
+        renderCliente(clientes[0].id);
+      } catch (err) {
+        mostrarMensagem('Erro ao carregar clientes: ' + err.message, 'error');
+      }
+    }
+
+    async function renderCliente(clienteId) {
+      if (!clienteId) return;
+      try {
+        const dados = await apiFetch(`/api/relatorios/clientes/${clienteId}`);
+        const kpis = dados.kpis;
+
+        if (!kpis) {
+          document.getElementById('cliente-kpis').innerHTML = `<div class="table-empty" style="grid-column:1/-1;">Este cliente ainda não tem indicadores calculados.</div>`;
+          document.getElementById('cliente-comparacao').innerHTML = '';
+          document.getElementById('cliente-chart').innerHTML = '';
+          document.getElementById('cliente-chart-labels').innerHTML = '';
+        } else {
+          const linhas = [
+            ['Score Geral', kpis.score_geral], ['ISA · Atendimento', kpis.isa], ['ISE · Infraestrutura', kpis.ise],
+            ['IST · Tecnologia', kpis.ist], ['ISV · Valor Percebido', kpis.isv],
+          ];
+          document.getElementById('cliente-kpis').innerHTML = linhas.map(([label, val]) => `
+            <div class="kpi-card"><div class="kpi-top"><span class="kpi-label">${label}</span>${badgeFaixa(val)}</div><div class="kpi-val">${fmt(val)}</div></div>
+          `).join('');
+
+          const serieHistorico = dados.historico.map((h) => ({ valor: h.score_geral }));
+          desenharLinha('cliente-chart', serieHistorico, corFaixa(kpis.score_geral));
+          document.getElementById('cliente-chart-labels').innerHTML = dados.historico.map((h) => `<span>${formatMes(h.ano_mes)}</span>`).join('');
+
+          const score = Number(kpis.score_geral);
+          const media = dados.mediaCarteira;
+          document.getElementById('cliente-comparacao').innerHTML = media === null ? '<p style="font-size:12.5px;color:var(--cinza-medio);">Sem outros clientes na carteira ainda pra comparar.</p>' : `
+            <div class="comp-row"><span class="comp-label">${dados.cliente.nome.split(' ').slice(0, 2).join(' ')}</span>
+              <div class="comp-track"><div class="comp-fill" style="width:${(score / 10) * 100}%;background:${corFaixa(score)};"></div></div>
+              <span class="comp-val" style="color:${corFaixa(score)};">${fmt(score)}</span></div>
+            <div class="comp-row"><span class="comp-label">Média da carteira</span>
+              <div class="comp-track"><div class="comp-fill" style="width:${(media / 10) * 100}%;background:#94A3B8;"></div></div>
+              <span class="comp-val" style="color:#64748B;">${fmt(media)}</span></div>
+            <p style="font-size:12px;color:var(--cinza-medio);margin-top:10px;">
+              ${score >= media ? `Está <strong style="color:#15803D;">${fmt(score - media)} pontos acima</strong> da média da carteira.` : `Está <strong style="color:#B91C1C;">${fmt(media - score)} pontos abaixo</strong> da média da carteira.`}
+            </p>`;
+        }
+
+        document.getElementById('cliente-empresa').textContent = dados.cliente.empresa;
+        document.getElementById('cliente-total-respostas').textContent = dados.totalRespostas;
+        document.getElementById('cliente-ultima').textContent = dados.ultimaResposta ? new Date(dados.ultimaResposta).toLocaleDateString('pt-BR') : '—';
+      } catch (err) {
+        mostrarMensagem('Erro ao carregar relatório do cliente: ' + err.message, 'error');
+      }
+    }
+
+    // ============ RELATÓRIO POR DIMENSÃO ============
+    function popularTabsIndicador() {
+      const container = document.getElementById('indicador-tabs');
+      container.innerHTML = INDICADORES.map((ind, i) => `<button class="indicador-tab ${i === 2 ? 'ativo' : ''}" data-chave="${ind.chave}">${ind.sigla} · ${ind.label}</button>`).join('');
+      container.querySelectorAll('.indicador-tab').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          container.querySelectorAll('.indicador-tab').forEach((b) => b.classList.remove('ativo'));
+          btn.classList.add('ativo');
+          renderIndicador(btn.dataset.chave);
+        });
+      });
+    }
+
+    async function renderIndicador(chave) {
+      try {
+        const info = INDICADORES.find((i) => i.chave === chave);
+        const dados = await apiFetch(`/api/relatorios/dimensoes/${chave}`);
+
+        if (dados.media === null) {
+          document.getElementById('indicador-media').innerHTML = `<div class="table-empty">Nenhum dado calculado ainda pra essa dimensão.</div>`;
+          document.getElementById('ranking-rows').innerHTML = `<tr><td colspan="4" class="table-empty">Nenhum cliente com indicador calculado ainda.</td></tr>`;
+          document.getElementById('indicador-chart').innerHTML = '';
+          document.getElementById('indicador-bar').innerHTML = '';
+          return;
+        }
+
+        document.getElementById('indicador-media').innerHTML = `
+          <div class="kpi-media-card">
+            <div class="val" style="color:${corFaixa(dados.media)};">${fmt(dados.media)}</div>
+            <div><div class="lbl">MÉDIA GERAL · ${info.sigla} (${info.label})</div>${badgeFaixa(dados.media)}</div>
+          </div>`;
+
+        const serieEvolucao = dados.evolucaoMensal.map((e) => ({ valor: e.media }));
+        desenharLinha('indicador-chart', serieEvolucao, corFaixa(dados.media));
+        document.getElementById('indicador-chart-labels').innerHTML = dados.evolucaoMensal.map((e) => `<span>${formatMes(e.ano_mes)}</span>`).join('');
+
+        const valores = dados.ranking;
+        const svgBar = document.getElementById('indicador-bar');
+        const w = 400, h = 190, barW = w / valores.length - 14;
+        svgBar.setAttribute('viewBox', `0 0 ${w} 220`);
+        svgBar.innerHTML = valores.map((v, i) => {
+          const x = i * (w / valores.length) + 8;
+          const barH = (v.valor / 10) * h;
+          const nomeCurto = v.nomeCliente.split(' ')[v.nomeCliente.split(' ').length - 1];
+          return `<rect x="${x}" y="${h - barH}" width="${barW}" height="${barH}" rx="4" fill="${corFaixa(v.valor)}"/>
+            <text x="${x + barW / 2}" y="${h - barH - 6}" text-anchor="middle" font-size="11" font-weight="700" fill="${corFaixa(v.valor)}">${fmt(v.valor)}</text>
+            <text x="${x + barW / 2}" y="${h + 14}" text-anchor="middle" font-size="8.5" fill="#64748B">${nomeCurto}</text>`;
+        }).join('');
+
+        document.getElementById('ranking-titulo').textContent = `Ranking · ${info.label}`;
+        document.getElementById('ranking-rows').innerHTML = valores.map((v, i) => `
+          <tr>
+            <td><div class="rank-pos-cell" style="background:${corFaixa(v.valor)};">${i + 1}</div></td>
+            <td class="col-titulo">${v.nomeCliente}</td>
+            <td data-label="Empresa">${v.empresaNome}</td>
+            <td data-label="Índice" style="font-weight:800;color:${corFaixa(v.valor)};">${fmt(v.valor)}</td>
+          </tr>
+        `).join('');
+      } catch (err) {
+        mostrarMensagem('Erro ao carregar relatório por dimensão: ' + err.message, 'error');
+      }
+    }
+
+    function mostrarView(view) {
+      document.getElementById('view-cliente').style.display = view === 'cliente' ? 'block' : 'none';
+      document.getElementById('view-indicador').style.display = view === 'indicador' ? 'block' : 'none';
+      document.getElementById('link-cliente').classList.toggle('ativo', view === 'cliente');
+      document.getElementById('link-indicador').classList.toggle('ativo', view === 'indicador');
+      document.getElementById('titulo-pagina').textContent = view === 'cliente' ? 'Relatório por Cliente' : 'Relatório por Dimensão';
+      document.getElementById('sub-pagina').textContent = view === 'cliente'
+        ? 'Acompanhe a saúde de um cliente específico, de todas as suas pesquisas'
+        : 'Compare todos os clientes numa dimensão específica — Atendimento, Infraestrutura, Tecnologia ou Valor Percebido';
+    }
+
+    document.getElementById('link-cliente').addEventListener('click', (e) => { e.preventDefault(); mostrarView('cliente'); });
+    document.getElementById('link-indicador').addEventListener('click', (e) => { e.preventDefault(); mostrarView('indicador'); });
+
+    const toggleBtn = document.getElementById('toggle-relatorios');
+    const subMenu = document.getElementById('sub-relatorios');
+    toggleBtn.addEventListener('click', () => { toggleBtn.classList.toggle('aberto'); subMenu.classList.toggle('aberto'); });
+
+    const sidebar = document.getElementById('sidebar');
+    const backdrop = document.getElementById('sidebar-backdrop');
+    document.getElementById('menu-toggle').addEventListener('click', () => { sidebar.classList.add('open'); backdrop.classList.add('open'); });
+    document.getElementById('sidebar-close').addEventListener('click', () => { sidebar.classList.remove('open'); backdrop.classList.remove('open'); });
+    backdrop.addEventListener('click', () => { sidebar.classList.remove('open'); backdrop.classList.remove('open'); });
+
+    (async () => {
+      try {
+        const resp = await fetch('/api/auth/me', { headers: { Authorization: 'Bearer ' + token } });
+        if (!resp.ok) { localStorage.removeItem('sigesc_token'); window.location.href = '/login.html'; return; }
+        const data = await resp.json();
+        if (data.usuario.perfil === 'administrador') { window.location.href = '/app/admin.html'; return; }
+        document.getElementById('side-role-name').textContent = data.usuario.nome;
+        document.getElementById('side-role-tag').textContent = data.usuario.perfil === 'gestor' ? 'Gestor' : 'Usuário';
+      } catch (err) { window.location.href = '/login.html'; return; }
+
+      await popularSelectClientes();
+      popularTabsIndicador();
+      await renderIndicador('ist');
+
+      const paramsIniciais = new URLSearchParams(window.location.search);
+      if (paramsIniciais.get('view') === 'indicador') mostrarView('indicador');
+      else mostrarView('cliente');
+    })();
+  </script>
+</body>
+</html>
