@@ -231,6 +231,10 @@ node tests/test_ajuste_geral.js
 # Dimensão), e os slides novos do Modo TV (Diagnóstico por Dimensão, Cliente em destaque)
 node tests/test_perfil_relatorios.js
 node tests/test_tv_slides_dimensao.js
+
+# Testes das 5 correções pontuais pós-Sprint 10 (Modo TV com 6 slides, valores
+# nos gráficos, CSS do Meu Perfil, cabeçalhos anti-cache)
+node tests/test_correcoes_finais.js
 ```
 
 Ambos assumem que o servidor já está rodando e que o seed do gestor inicial já foi executado.

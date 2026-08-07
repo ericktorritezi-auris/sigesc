@@ -51,7 +51,22 @@ app.use(express.json({ limit: '2mb' }));
 app.use(express.urlencoded({ extended: true }));
 
 // ---------- Arquivos estáticos (landing, login, app shell) ----------
-app.use(express.static(path.join(__dirname, 'public')));
+// Desativa cache de arquivos estáticos (HTML/CSS/JS/imagens) por completo —
+// sem isso, o navegador (e às vezes o proxy do Railway) pode guardar uma
+// versão antiga em cache e não buscar a atualização mesmo depois de um novo
+// deploy, exigindo F5 forçado + limpar cache manualmente. Com
+// "no-store", cada visita busca a versão mais recente direto do servidor,
+// sem exceção. Custo: um pouco mais de banda a cada carregamento — aceitável
+// pra um sistema interno como esse, e o preço vale a pena pela confiabilidade.
+app.use(express.static(path.join(__dirname, 'public'), {
+  etag: false,
+  lastModified: false,
+  setHeaders: (res) => {
+    res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.set('Pragma', 'no-cache');
+    res.set('Expires', '0');
+  },
+}));
 
 // ---------- Rotas de API ----------
 app.use('/health', healthRoutes);
