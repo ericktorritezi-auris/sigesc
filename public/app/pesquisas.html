@@ -32,6 +32,7 @@
         <button class="active">📋 Pesquisas</button>
         <a href="/app/respostas.html">💬 Respostas</a>
         <a href="/app/lgpd.html">🛡️ LGPD</a>
+        <a href="/app/empresas.html">🏢 Empresas</a>
         <a href="/app/usuarios.html">👥 Usuários</a>
         <a href="/app/configuracoes.html">⚙️ Configurações</a>
       </div>
@@ -77,10 +78,39 @@
     </div>
   </div>
 
+  <div class="overlay" id="modal-duplicar">
+    <div class="panel" style="max-width:440px;">
+      <div class="panel-head"><h3 style="font-size:16px;">Duplicar pesquisa</h3><button class="panel-close" onclick="fecharModalDuplicar()">✕</button></div>
+      <div class="panel-body">
+        <input type="hidden" id="dup-pesquisa-id">
+        <div class="field"><label>Empresa de destino</label>
+          <select id="dup-empresa"></select>
+        </div>
+        <div class="field">
+          <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;font-weight:400;">
+            <input type="checkbox" id="dup-mesmo-ciclo" checked style="margin-top:3px;width:auto;">
+            <span><strong>Vincular ao mesmo Ciclo</strong> da pesquisa original — os resultados das duas entram consolidados juntos no mesmo indicador. Desmarque para criar um Ciclo novo e independente.</span>
+          </label>
+        </div>
+        <button class="btn btn-primary btn-block" id="btn-confirmar-duplicar" style="margin-top:8px;">Duplicar pesquisa</button>
+      </div>
+    </div>
+  </div>
+
 <style>
   .alert-box{padding:12px 16px;border-radius:10px;font-size:13px;font-weight:600;margin-bottom:16px;}
   .alert-error{background:#FEE2E2;color:#B91C1C;}
   .alert-success{background:#DCFCE7;color:#15803D;}
+  .overlay{position:fixed;inset:0;background:rgba(13,27,42,.5);display:none;align-items:center;justify-content:center;z-index:100;padding:20px;}
+  .overlay.active{display:flex;}
+  .panel{background:#fff;border-radius:16px;max-width:640px;width:100%;max-height:88vh;overflow-y:auto;}
+  .panel-head{padding:20px 24px;border-bottom:1px solid #EEF2F7;display:flex;justify-content:space-between;align-items:center;}
+  .panel-body{padding:20px 24px;}
+  .panel-close{width:30px;height:30px;border-radius:8px;background:var(--cinza-claro);color:var(--cinza-medio);}
+  .field{margin-bottom:14px;}
+  .field label{display:block;font-size:12px;font-weight:600;color:var(--cinza-escuro);margin-bottom:6px;}
+  .field select{width:100%;padding:10px 12px;border:1.5px solid #E2E8F0;border-radius:9px;font-family:inherit;font-size:13px;}
+  .field span{font-size:12.5px;font-weight:500;color:var(--cinza-escuro);line-height:1.5;}
 </style>
 
   <script src="/js/footer.js"></script>
@@ -119,7 +149,7 @@
     }
 
     function badgeStatus(status) {
-      const map = { ativa: ['Ativa', 'status-ativa'], rascunho: ['Rascunho', 'status-rascunho'], encerrada: ['Encerrada', 'status-encerrada'] };
+      const map = { ativa: ['Ativa', 'status-ativa'], rascunho: ['Rascunho', 'status-rascunho'], inativa: ['Inativa', 'status-inativa'], encerrada: ['Encerrada', 'status-encerrada'] };
       const [label, cls] = map[status] || [status, 'status-rascunho'];
       return `<span class="status-pill ${cls}">${label}</span>`;
     }
@@ -169,24 +199,33 @@
 
     async function duplicarPesquisa(pesquisaId) {
       try {
-        const empresasData = await apiFetch('/api/empresas');
-        const nomes = empresasData.empresas.map((e, i) => `${i + 1}) ${e.nome}`).join('\n');
-        const escolha = prompt(`Duplicar para qual empresa?\n${nomes}\n\nDigite o número:`);
-        const idx = parseInt(escolha, 10) - 1;
-        if (isNaN(idx) || !empresasData.empresas[idx]) return;
+        const { empresas } = await apiFetch('/api/empresas');
+        document.getElementById('dup-pesquisa-id').value = pesquisaId;
+        document.getElementById('dup-empresa').innerHTML = empresas.map(e => `<option value="${e.id}">${e.nome}</option>`).join('');
+        document.getElementById('dup-mesmo-ciclo').checked = true;
+        document.getElementById('modal-duplicar').classList.add('active');
+      } catch (err) {
+        mostrarMensagem('Erro ao carregar empresas: ' + err.message, 'error');
+      }
+    }
+    function fecharModalDuplicar() { document.getElementById('modal-duplicar').classList.remove('active'); }
 
-        const mesmoCiclo = confirm('Vincular ao MESMO CICLO da pesquisa original? (OK = sim, consolida os resultados / Cancelar = cria um ciclo novo e independente)');
-
-        const resultado = await apiFetch(`/api/pesquisas/${pesquisaId}/duplicar`, {
+    document.getElementById('btn-confirmar-duplicar').addEventListener('click', async () => {
+      const pesquisaId = document.getElementById('dup-pesquisa-id').value;
+      const empresaId = document.getElementById('dup-empresa').value;
+      const mesmoCiclo = document.getElementById('dup-mesmo-ciclo').checked;
+      try {
+        await apiFetch(`/api/pesquisas/${pesquisaId}/duplicar`, {
           method: 'POST',
-          body: JSON.stringify({ empresaId: empresasData.empresas[idx].id, mesmoCiclo }),
+          body: JSON.stringify({ empresaId, mesmoCiclo }),
         });
-        mostrarMensagem('Pesquisa duplicada com sucesso para ' + empresasData.empresas[idx].nome + '!', 'success');
+        fecharModalDuplicar();
+        mostrarMensagem('Pesquisa duplicada com sucesso!', 'success');
         carregarPesquisas(paginaAtual);
       } catch (err) {
         mostrarMensagem('Erro ao duplicar: ' + err.message, 'error');
       }
-    }
+    });
 
     document.getElementById('btn-nova-pesquisa').addEventListener('click', () => {
       window.location.href = '/app/pesquisa-wizard.html';

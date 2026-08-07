@@ -222,6 +222,10 @@ node tests/test_ia_frontend.js
 # cliente/mês e confirma que a agregação mensal bate matematicamente certo
 # mesmo sob concorrência real (Sprint 9)
 node tests/test_carga_concorrencia.js
+
+# Teste do ajuste geral (06/08/2026) — Empresas com identidade visual própria,
+# Inativar/Reativar/Excluir pesquisa, de ponta a ponta
+node tests/test_ajuste_geral.js
 ```
 
 Ambos assumem que o servidor já está rodando e que o seed do gestor inicial já foi executado.

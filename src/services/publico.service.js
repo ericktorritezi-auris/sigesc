@@ -9,20 +9,53 @@ class AppError extends Error {
   }
 }
 
-async function carregarPesquisaAtivaPorSlug(slug) {
+/** Carrega a pesquisa pelo slug, qualquer que seja o status — quem chama decide o que fazer. */
+async function carregarPesquisaPorSlug(slug) {
   const { rows } = await query('SELECT * FROM pesquisas WHERE slug_link_publico = $1', [slug]);
   if (rows.length === 0) {
     throw new AppError('Pesquisa não encontrada.', 404);
   }
-  const pesquisa = rows[0];
+  return rows[0];
+}
+
+/** Usado por ações que gravam dado (recusa/resposta) — só funciona se estiver realmente ativa. */
+async function carregarPesquisaAtivaPorSlug(slug) {
+  const pesquisa = await carregarPesquisaPorSlug(slug);
   if (pesquisa.status !== 'ativa') {
     throw new AppError('Esta pesquisa não está disponível para respostas no momento.', 404);
   }
   return pesquisa;
 }
 
+async function buscarIdentidadeEmpresa(empresaId) {
+  const { rows } = await query('SELECT nome, logo_url, cor_primaria, cor_secundaria FROM empresas WHERE id = $1', [empresaId]);
+  return rows[0] || { nome: null, logo_url: null, cor_primaria: null, cor_secundaria: null };
+}
+
 async function buscarPesquisaPublica(slug) {
-  const pesquisa = await carregarPesquisaAtivaPorSlug(slug);
+  const pesquisa = await carregarPesquisaPorSlug(slug);
+
+  // Rascunho/encerrada nunca ficam visíveis publicamente — só existiu ou vai
+  // existir link, mas ele não deve "confirmar" a existência da pesquisa.
+  if (pesquisa.status !== 'ativa' && pesquisa.status !== 'inativa') {
+    throw new AppError('Esta pesquisa não está disponível para respostas no momento.', 404);
+  }
+
+  const empresa = await buscarIdentidadeEmpresa(pesquisa.empresa_id);
+
+  // Pesquisa INATIVA: o gestor pausou a coleta. O link continua existindo
+  // (não vira 404) mas mostra só uma tela de aviso com a marca da empresa —
+  // sem expor blocos/perguntas/carteira de clientes.
+  if (pesquisa.status === 'inativa') {
+    return {
+      inativa: true,
+      titulo: pesquisa.titulo,
+      organizacaoNome: empresa.nome,
+      logoUrl: empresa.logo_url,
+      corPrimaria: empresa.cor_primaria,
+      corSecundaria: empresa.cor_secundaria,
+    };
+  }
 
   const { rows: blocos } = await query('SELECT * FROM pesquisa_blocos WHERE pesquisa_id = $1 ORDER BY ordem ASC', [pesquisa.id]);
   for (const bloco of blocos) {
@@ -38,21 +71,14 @@ async function buscarPesquisaPublica(slug) {
     [pesquisa.id]
   );
 
-  // Marca/identidade visual da organização (whitelabel) — o formulário público
-  // mostra a logo do gestor/organização, não a marca genérica do SIGESC.
-  // Também é aqui que os toggles de Configurações (IA/reCAPTCHA) chegam até
-  // o formulário público — sem isso, o toggle da tela não teria efeito real.
+  // reCAPTCHA/IA continuam sendo configurações de conta (Organização) — só a
+  // identidade visual (logo/cores/política) é que vive na Empresa agora.
   const { rows: orgRows } = await query(
-    `SELECT o.nome AS organizacao_nome, o.logo_url, o.recaptcha_habilitado, o.ia_analise_habilitada,
-            o.cor_primaria, o.cor_secundaria
-     FROM usuarios u
-     JOIN organizacoes o ON o.id = u.organizacao_id
-     WHERE u.id = $1`,
+    `SELECT o.recaptcha_habilitado FROM usuarios u JOIN organizacoes o ON o.id = u.organizacao_id WHERE u.id = $1`,
     [pesquisa.gestor_id]
   );
-  const organizacao = orgRows[0] || { organizacao_nome: null, logo_url: null, recaptcha_habilitado: true, ia_analise_habilitada: true, cor_primaria: null, cor_secundaria: null };
-
-  const recaptchaHabilitado = Boolean(organizacao.recaptcha_habilitado) && Boolean(process.env.RECAPTCHA_SECRET_KEY);
+  const recaptchaHabilitadoNaOrg = orgRows[0]?.recaptcha_habilitado ?? true;
+  const recaptchaHabilitado = Boolean(recaptchaHabilitadoNaOrg) && Boolean(process.env.RECAPTCHA_SECRET_KEY);
 
   return {
     titulo: pesquisa.titulo,
@@ -60,10 +86,10 @@ async function buscarPesquisaPublica(slug) {
     politicaPrivacidadeTexto: pesquisa.politica_privacidade_texto,
     blocos,
     clientes,
-    organizacaoNome: organizacao.organizacao_nome,
-    logoUrl: organizacao.logo_url,
-    corPrimaria: organizacao.cor_primaria,
-    corSecundaria: organizacao.cor_secundaria,
+    organizacaoNome: empresa.nome,
+    logoUrl: empresa.logo_url,
+    corPrimaria: empresa.cor_primaria,
+    corSecundaria: empresa.cor_secundaria,
     recaptchaHabilitado,
     recaptchaSiteKey: recaptchaHabilitado ? process.env.RECAPTCHA_SITE_KEY : null,
   };

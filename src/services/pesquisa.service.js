@@ -83,10 +83,11 @@ async function criarPesquisa(usuarioAutenticado, { titulo, empresaId, rotuloEnti
     throw new AppError('Empresa é obrigatória — toda pesquisa pertence a exatamente uma empresa.');
   }
 
-  const empresa = await query('SELECT id FROM empresas WHERE id = $1 AND gestor_id = $2', [empresaId, gestorId]);
+  const empresa = await query('SELECT id, politica_privacidade_padrao FROM empresas WHERE id = $1 AND gestor_id = $2', [empresaId, gestorId]);
   if (empresa.rows.length === 0) {
     throw new AppError('Empresa não encontrada na sua conta.', 404);
   }
+  const politicaDaEmpresa = empresa.rows[0].politica_privacidade_padrao;
 
   const client = await pool.connect();
   try {
@@ -115,7 +116,7 @@ async function criarPesquisa(usuarioAutenticado, { titulo, empresaId, rotuloEnti
       `INSERT INTO pesquisas (gestor_id, empresa_id, ciclo_id, titulo, rotulo_entidade, slug_link_publico, status, politica_privacidade_texto)
        VALUES ($1, $2, $3, $4, $5, $6, 'rascunho', $7)
        RETURNING *`,
-      [gestorId, empresaId, cicloIdFinal, titulo.trim(), rotuloEntidade || ROTULO_ENTIDADE_PADRAO, slug, POLITICA_PRIVACIDADE_PADRAO]
+      [gestorId, empresaId, cicloIdFinal, titulo.trim(), rotuloEntidade || ROTULO_ENTIDADE_PADRAO, slug, politicaDaEmpresa || POLITICA_PRIVACIDADE_PADRAO]
     );
     const pesquisa = novaPesquisa.rows[0];
 
@@ -359,6 +360,35 @@ async function ativarPesquisa(usuarioAutenticado, pesquisaId) {
   return rows[0];
 }
 
+/**
+ * Inativa uma pesquisa ativa — o link público continua existindo, mas passa
+ * a mostrar uma tela de aviso em vez do formulário, e não coleta mais
+ * respostas. Reversível a qualquer momento pelo mesmo botão de ativar
+ * (ativarPesquisa já trata 'inativa' como um status reativável).
+ */
+async function inativarPesquisa(usuarioAutenticado, pesquisaId) {
+  const pesquisa = await carregarPesquisaOuFalhar(usuarioAutenticado, pesquisaId);
+
+  if (pesquisa.status !== 'ativa') {
+    throw new AppError('Só é possível inativar uma pesquisa que está ativa.', 423);
+  }
+
+  const { rows } = await query(`UPDATE pesquisas SET status = 'inativa', updated_at = now() WHERE id = $1 RETURNING *`, [pesquisaId]);
+  return rows[0];
+}
+
+/**
+ * Exclui a pesquisa PERMANENTEMENTE — respostas, itens de resposta, scores,
+ * indicadores mensais, consentimentos LGPD, blocos, perguntas e carteira de
+ * clientes são todos apagados junto, via cascade do banco (nenhuma dessas
+ * tabelas fica com registro órfão). Ação irreversível.
+ */
+async function excluirPesquisa(usuarioAutenticado, pesquisaId) {
+  await carregarPesquisaOuFalhar(usuarioAutenticado, pesquisaId);
+  await query('DELETE FROM pesquisas WHERE id = $1', [pesquisaId]);
+  return { excluida: true };
+}
+
 async function duplicarPesquisa(usuarioAutenticado, pesquisaId, { empresaId, mesmoCiclo }) {
   const original = await carregarPesquisaOuFalhar(usuarioAutenticado, pesquisaId);
   const gestorId = gestorEfetivoId(usuarioAutenticado);
@@ -456,6 +486,8 @@ module.exports = {
   adicionarCliente,
   removerCliente,
   ativarPesquisa,
+  inativarPesquisa,
+  excluirPesquisa,
   duplicarPesquisa,
   AppError,
 };

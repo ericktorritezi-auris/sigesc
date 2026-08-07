@@ -27,6 +27,7 @@
         <a href="/app/pesquisas.html">📋 Pesquisas</a>
         <a href="/app/respostas.html">💬 Respostas</a>
         <a href="/app/lgpd.html">🛡️ LGPD</a>
+        <a href="/app/empresas.html">🏢 Empresas</a>
         <a href="/app/usuarios.html">👥 Usuários</a>
         <button class="active">⚙️ Configurações</button>
       </div>
@@ -39,7 +40,7 @@
           <button class="menu-toggle" id="menu-toggle" aria-label="Abrir menu">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
           </button>
-          <div><h2>Configurações</h2><div class="sub">Organização, política de privacidade e preferências do sistema</div></div>
+          <div><h2>Configurações</h2><div class="sub">Preferências gerais da sua conta</div></div>
         </div>
       </div>
 
@@ -47,18 +48,11 @@
         <div id="msg-area"></div>
 
         <div class="card" style="max-width:600px;margin-bottom:20px;">
-          <div class="card-head"><h3>Organização</h3></div>
-          <div class="field"><label>Nome</label><input type="text" id="cfg-nome"></div>
-          <div class="field"><label>URL da logo (link externo)</label><input type="text" id="cfg-logo" placeholder="https://..."></div>
-          <div style="display:flex;gap:14px;">
-            <div class="field" style="flex:1;"><label>Cor primária</label><input type="text" id="cfg-cor-primaria"></div>
-            <div class="field" style="flex:1;"><label>Cor secundária</label><input type="text" id="cfg-cor-secundaria"></div>
-          </div>
-        </div>
-
-        <div class="card" style="max-width:600px;margin-bottom:20px;">
-          <div class="card-head"><h3>Política de Privacidade padrão</h3></div>
-          <div class="field"><label>Texto usado em novas pesquisas (Bloco 1)</label><textarea id="cfg-politica" rows="4"></textarea></div>
+          <div class="card-head"><h3>🏢 Logo, cores e política de privacidade</h3></div>
+          <p style="font-size:13px;color:var(--cinza-medio);line-height:1.6;">
+            Isso agora é configurado <strong>por Empresa</strong>, não mais aqui — assim cada marca do seu grupo pode ter sua própria identidade visual no formulário público.
+          </p>
+          <a href="/app/empresas.html" class="btn btn-primary" style="margin-top:14px;padding:9px 18px;display:inline-flex;font-size:13px;">Ir para Empresas →</a>
         </div>
 
         <div class="card" style="max-width:600px;margin-bottom:20px;">
@@ -95,9 +89,6 @@
   .card{background:#fff;border-radius:14px;padding:20px;box-shadow:var(--shadow);border:1px solid #EEF2F7;}
   .card-head{margin-bottom:14px;}
   .card-head h3{font-size:14.5px;}
-  .field{margin-bottom:14px;}
-  .field label{display:block;font-size:12px;font-weight:600;color:var(--cinza-escuro);margin-bottom:6px;}
-  .field input, .field textarea{width:100%;padding:10px 12px;border:1.5px solid #E2E8F0;border-radius:9px;font-family:inherit;font-size:13px;}
   .toggle-row{display:flex;justify-content:space-between;align-items:center;gap:16px;cursor:pointer;}
   .toggle-row p{font-size:11.5px;color:var(--cinza-medio);margin-top:2px;}
   .toggle-row input[type=checkbox]{width:40px;height:22px;flex-shrink:0;accent-color:var(--azul-inteligente);}
@@ -131,11 +122,6 @@
     async function carregar() {
       try {
         const { configuracao: c } = await apiFetch('/api/configuracoes');
-        document.getElementById('cfg-nome').value = c.nome || '';
-        document.getElementById('cfg-logo').value = c.logo_url || '';
-        document.getElementById('cfg-cor-primaria').value = c.cor_primaria || '';
-        document.getElementById('cfg-cor-secundaria').value = c.cor_secundaria || '';
-        document.getElementById('cfg-politica').value = c.politica_privacidade_padrao || '';
         document.getElementById('cfg-ia').checked = c.ia_analise_habilitada;
         document.getElementById('cfg-recaptcha').checked = c.recaptcha_habilitado;
       } catch (err) { mostrarMensagem('Erro ao carregar: ' + err.message, 'error'); }
@@ -146,11 +132,6 @@
         await apiFetch('/api/configuracoes', {
           method: 'PUT',
           body: JSON.stringify({
-            nome: document.getElementById('cfg-nome').value,
-            logoUrl: document.getElementById('cfg-logo').value,
-            corPrimaria: document.getElementById('cfg-cor-primaria').value,
-            corSecundaria: document.getElementById('cfg-cor-secundaria').value,
-            politicaPrivacidadePadrao: document.getElementById('cfg-politica').value,
             iaAnaliseHabilitada: document.getElementById('cfg-ia').checked,
             recaptchaHabilitado: document.getElementById('cfg-recaptcha').checked,
           }),

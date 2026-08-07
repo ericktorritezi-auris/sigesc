@@ -232,6 +232,21 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;}
       document.getElementById('tela-carregando').style.display = 'none';
       document.getElementById('pf-shell').style.display = 'block';
 
+      // Pesquisa inativada pelo gestor — o link continua existindo, mas
+      // mostra só um aviso, sem expor blocos/perguntas/carteira.
+      if (pesquisa.inativa) {
+        document.querySelector('.pf-progress-track').style.display = 'none';
+        document.getElementById('pf-progress-label').style.display = 'none';
+        document.getElementById('pf-card').innerHTML = `
+          <div class="end-screen">
+            <div class="end-icon declined">⏸</div>
+            <h3>Esta pesquisa está inativa</h3>
+            <p>Não é possível responder no momento — o link não recebe mais respostas. Se você acredita que isso é um engano, entre em contato com quem te enviou este link.</p>
+          </div>`;
+        if (typeof inserirRodapePublico === 'function') inserirRodapePublico();
+        return;
+      }
+
       if (recaptchaSiteKey) {
         const s = document.createElement('script');
         s.src = 'https://www.google.com/recaptcha/api.js?render=explicit&onload=onRecaptchaReady';

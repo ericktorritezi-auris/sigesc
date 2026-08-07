@@ -7,5 +7,7 @@ const router = express.Router();
 router.use(autenticar, bloquearAdministrador);
 router.get('/', empresaController.getEmpresas);
 router.post('/', empresaController.postEmpresa);
+router.get('/:id', empresaController.getEmpresaDetalhe);
+router.put('/:id', empresaController.putEmpresa);
 
 module.exports = router;

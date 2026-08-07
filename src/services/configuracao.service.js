@@ -7,10 +7,15 @@ class AppError extends Error {
   }
 }
 
+/**
+ * Configurações que sobraram no nível de Organização (conta inteira) depois
+ * que logo/cores/política migraram para Empresa (06/08/2026): nome (só
+ * leitura, informativo) e os toggles de IA/reCAPTCHA, que fazem sentido
+ * serem por conta, não por marca individual.
+ */
 async function buscarConfiguracao(usuarioAutenticado) {
   const { rows } = await query(
-    `SELECT id, nome, logo_url, cor_primaria, cor_secundaria, politica_privacidade_padrao,
-            ia_analise_habilitada, recaptcha_habilitado
+    `SELECT id, nome, ia_analise_habilitada, recaptcha_habilitado
      FROM organizacoes WHERE id = $1`,
     [usuarioAutenticado.organizacaoId]
   );
@@ -25,30 +30,16 @@ async function atualizarConfiguracao(usuarioAutenticado, dados) {
     throw new AppError('Apenas o gestor pode alterar as configurações.', 403);
   }
 
-  const { nome, logoUrl, corPrimaria, corSecundaria, politicaPrivacidadePadrao, iaAnaliseHabilitada, recaptchaHabilitado } = dados;
+  const { iaAnaliseHabilitada, recaptchaHabilitado } = dados;
 
   const { rows } = await query(
     `UPDATE organizacoes SET
-       nome = COALESCE($1, nome),
-       logo_url = COALESCE($2, logo_url),
-       cor_primaria = COALESCE($3, cor_primaria),
-       cor_secundaria = COALESCE($4, cor_secundaria),
-       politica_privacidade_padrao = COALESCE($5, politica_privacidade_padrao),
-       ia_analise_habilitada = COALESCE($6, ia_analise_habilitada),
-       recaptcha_habilitado = COALESCE($7, recaptcha_habilitado),
+       ia_analise_habilitada = COALESCE($1, ia_analise_habilitada),
+       recaptcha_habilitado = COALESCE($2, recaptcha_habilitado),
        updated_at = now()
-     WHERE id = $8
-     RETURNING id, nome, logo_url, cor_primaria, cor_secundaria, politica_privacidade_padrao, ia_analise_habilitada, recaptcha_habilitado`,
-    [
-      nome || null,
-      logoUrl !== undefined ? logoUrl : null,
-      corPrimaria || null,
-      corSecundaria || null,
-      politicaPrivacidadePadrao || null,
-      iaAnaliseHabilitada,
-      recaptchaHabilitado,
-      usuarioAutenticado.organizacaoId,
-    ]
+     WHERE id = $3
+     RETURNING id, nome, ia_analise_habilitada, recaptcha_habilitado`,
+    [iaAnaliseHabilitada, recaptchaHabilitado, usuarioAutenticado.organizacaoId]
   );
   return rows[0];
 }

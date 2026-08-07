@@ -100,6 +100,24 @@ async function postAtivar(req, res, next) {
   }
 }
 
+async function postInativar(req, res, next) {
+  try {
+    const pesquisa = await pesquisaService.inativarPesquisa(req.usuario, req.params.id);
+    res.status(200).json({ pesquisa });
+  } catch (err) {
+    tratarErro(err, res, next);
+  }
+}
+
+async function deletePesquisa(req, res, next) {
+  try {
+    const resultado = await pesquisaService.excluirPesquisa(req.usuario, req.params.id);
+    res.status(200).json(resultado);
+  } catch (err) {
+    tratarErro(err, res, next);
+  }
+}
+
 async function postDuplicar(req, res, next) {
   try {
     const pesquisa = await pesquisaService.duplicarPesquisa(req.usuario, req.params.id, req.body);
@@ -140,6 +158,8 @@ module.exports = {
   postCliente,
   deleteCliente,
   postAtivar,
+  postInativar,
+  deletePesquisa,
   postDuplicar,
   getEvolucaoCiclo,
   getRankingCiclo,

@@ -105,6 +105,7 @@ td.col-num{text-align:center;width:1%;white-space:nowrap;}
 .status-ativa{background:#DCFCE7;color:#15803D;}
 .status-rascunho{background:#F1F5F9;color:var(--cinza-medio);}
 .status-encerrada{background:#E2E8F0;color:var(--cinza-escuro);}
+.status-inativa{background:#FEF3C7;color:#B45309;}
 
 .row-actions{display:flex;gap:6px;justify-content:flex-end;}
 .row-actions button{

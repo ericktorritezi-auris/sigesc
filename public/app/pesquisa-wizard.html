@@ -32,6 +32,7 @@
         <a href="/app/pesquisas.html" class="active">📋 Pesquisas</a>
         <a href="/app/respostas.html">💬 Respostas</a>
         <a href="/app/lgpd.html">🛡️ LGPD</a>
+        <a href="/app/empresas.html">🏢 Empresas</a>
         <a href="/app/usuarios.html">👥 Usuários</a>
         <a href="/app/configuracoes.html">⚙️ Configurações</a>
       </div>
@@ -83,7 +84,29 @@
     </div>
   </div>
 
+  <div class="overlay" id="modal-excluir">
+    <div class="panel" style="max-width:460px;">
+      <div class="panel-head"><h3 style="font-size:16px;color:#B91C1C;">Excluir pesquisa permanentemente</h3><button class="panel-close" onclick="fecharModalExcluir()">✕</button></div>
+      <div class="panel-body">
+        <p style="font-size:13px;color:var(--cinza-escuro);margin-bottom:14px;">Isso apaga <strong>permanentemente</strong> esta pesquisa e tudo relacionado a ela: todas as respostas, os registros de consentimento LGPD, os índices calculados — não pode ser desfeito.</p>
+        <div class="field"><label>Digite o título exato da pesquisa para confirmar: <strong id="excluir-nome-confirmacao"></strong></label>
+          <input type="text" id="excluir-input-confirmacao">
+        </div>
+        <button class="btn btn-block" onclick="confirmarExclusao()" style="background:#EF4444;color:#fff;margin-top:8px;">Excluir permanentemente</button>
+      </div>
+    </div>
+  </div>
+
 <style>
+  .overlay{position:fixed;inset:0;background:rgba(13,27,42,.5);display:none;align-items:center;justify-content:center;z-index:100;padding:20px;}
+  .overlay.active{display:flex;}
+  .panel{background:#fff;border-radius:16px;max-width:640px;width:100%;max-height:88vh;overflow-y:auto;}
+  .panel-head{padding:20px 24px;border-bottom:1px solid #EEF2F7;display:flex;justify-content:space-between;align-items:center;}
+  .panel-body{padding:20px 24px;}
+  .panel-close{width:30px;height:30px;border-radius:8px;background:var(--cinza-claro);color:var(--cinza-medio);}
+  .field{margin-bottom:14px;}
+  .field label{display:block;font-size:12px;font-weight:600;color:var(--cinza-escuro);margin-bottom:8px;line-height:1.5;}
+  .field input{width:100%;padding:10px 12px;border:1.5px solid #E2E8F0;border-radius:9px;font-family:inherit;font-size:13px;}
   .stepper{display:flex;margin-bottom:22px;background:#fff;border-radius:14px;padding:16px 20px;box-shadow:var(--shadow);border:1px solid #EEF2F7;overflow-x:auto;gap:0;}
   .step-item{display:flex;align-items:center;gap:8px;flex-shrink:0;cursor:pointer;}
   .step-circle{width:26px;height:26px;border-radius:50%;background:var(--cinza-claro);color:var(--cinza-medio);display:flex;align-items:center;justify-content:center;font-size:11.5px;font-weight:700;flex-shrink:0;}
@@ -303,21 +326,38 @@
         }
       }
 
-      // Rodapé de ações — ativar / link público
+      // Rodapé de ações — ativar/inativar / link público / excluir
+      const acaoStatus = (() => {
+        if (pesquisaAtual.status === 'ativa') {
+          return `<span class="status-pill" style="background:#DCFCE7;color:#15803D;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:700;">✓ Pesquisa ativa</span>
+            <button class="btn btn-outline-dark" style="padding:9px 14px;font-size:12px;margin-left:10px;" onclick="inativarPesquisa()">⏸ Inativar</button>`;
+        }
+        if (pesquisaAtual.status === 'inativa') {
+          return `<span class="status-pill" style="background:#F1F5F9;color:var(--cinza-medio);padding:4px 12px;border-radius:20px;font-size:12px;font-weight:700;">⏸ Pesquisa inativa</span>
+            <button class="btn btn-primary" style="padding:9px 14px;font-size:12px;margin-left:10px;" onclick="ativarPesquisa()">▶ Reativar</button>`;
+        }
+        return `<button class="btn btn-primary" onclick="ativarPesquisa()">Ativar pesquisa e gerar link →</button>`;
+      })();
+
       html += `<div style="margin-top:26px;padding-top:20px;border-top:1px solid #EEF2F7;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;">
-        <div>${pesquisaAtual.status === 'ativa'
-          ? `<span class="status-pill" style="background:#DCFCE7;color:#15803D;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:700;">✓ Pesquisa ativa</span>`
-          : `<button class="btn btn-primary" onclick="ativarPesquisa()">Ativar pesquisa e gerar link →</button>`}</div>
+        <div>${acaoStatus}</div>
         <div style="display:flex;gap:10px;">
           ${stepAtual > 0 ? `<button class="btn btn-outline-dark" style="padding:9px 16px;font-size:12.5px;" onclick="irParaStep(${stepAtual - 1})">← Voltar</button>` : ''}
           ${stepAtual < 6 ? `<button class="btn btn-primary" style="padding:9px 16px;font-size:12.5px;" onclick="irParaStep(${stepAtual + 1})">Próximo →</button>` : ''}
         </div>
       </div>`;
 
-      if (pesquisaAtual.status === 'ativa') {
+      if (pesquisaAtual.status === 'ativa' || pesquisaAtual.status === 'inativa') {
         const link = `${window.location.origin}/p/${pesquisaAtual.slug_link_publico}`;
         html += `<div class="link-box"><span>${link}</span><button class="btn btn-outline-dark" style="padding:6px 12px;font-size:11.5px;flex-shrink:0;" onclick="copiarLink('${link}')">Copiar</button></div>`;
+        if (pesquisaAtual.status === 'inativa') {
+          html += `<p style="font-size:11.5px;color:var(--cinza-medio);margin-top:6px;">O link continua existindo, mas quem acessar vê um aviso de que a pesquisa está inativa — não é mais possível responder.</p>`;
+        }
       }
+
+      html += `<div style="margin-top:24px;padding-top:16px;border-top:1px dashed #FEE2E2;">
+        <button class="btn" style="padding:8px 14px;font-size:12px;background:#FEE2E2;color:#B91C1C;font-weight:700;" onclick="abrirModalExcluir()">🗑 Excluir pesquisa permanentemente</button>
+      </div>`;
 
       document.getElementById('wizard-body').innerHTML = html;
     }
@@ -392,6 +432,36 @@
         await apiFetch(`/api/pesquisas/${pesquisaId}/ativar`, { method: 'POST' });
         mostrarMensagem('Pesquisa ativada! Link público gerado.', 'success');
         await carregarPesquisa();
+      } catch (err) { mostrarMensagem(err.message, 'error'); }
+    }
+
+    async function inativarPesquisa() {
+      if (!confirm('Inativar esta pesquisa? O link para de coletar respostas até você reativar.')) return;
+      try {
+        await apiFetch(`/api/pesquisas/${pesquisaId}/inativar`, { method: 'POST' });
+        mostrarMensagem('Pesquisa inativada.', 'success');
+        await carregarPesquisa();
+      } catch (err) { mostrarMensagem(err.message, 'error'); }
+    }
+
+    function abrirModalExcluir() {
+      document.getElementById('excluir-nome-confirmacao').textContent = pesquisaAtual.titulo;
+      document.getElementById('excluir-input-confirmacao').value = '';
+      document.getElementById('modal-excluir').classList.add('active');
+    }
+    function fecharModalExcluir() { document.getElementById('modal-excluir').classList.remove('active'); }
+
+    async function confirmarExclusao() {
+      const digitado = document.getElementById('excluir-input-confirmacao').value.trim();
+      if (digitado !== pesquisaAtual.titulo) {
+        mostrarMensagem('O título digitado não confere. Nada foi excluído.', 'error');
+        return;
+      }
+      try {
+        await apiFetch(`/api/pesquisas/${pesquisaId}`, { method: 'DELETE' });
+        fecharModalExcluir();
+        mostrarMensagem('Pesquisa excluída permanentemente.', 'success');
+        setTimeout(() => { window.location.href = '/app/pesquisas.html'; }, 1200);
       } catch (err) { mostrarMensagem(err.message, 'error'); }
     }
 
