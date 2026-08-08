@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SIGESC — Relatórios</title>
+<title>SIGESC — Análises</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/css/style.css">
@@ -26,7 +26,7 @@
         <a href="/app/empresas.html">🏢 Empresas</a>
         <a href="/app/usuarios.html">👥 Usuários</a>
         <div class="side-nav-grupo">
-          <button class="side-nav-toggle aberto" id="toggle-relatorios">📈 Relatórios <span class="chev">▾</span></button>
+          <button class="side-nav-toggle aberto" id="toggle-relatorios">📈 Análises <span class="chev">▾</span></button>
           <div class="side-nav-sub aberto" id="sub-relatorios">
             <a href="#" data-view="cliente" id="link-cliente">Por Cliente</a>
             <a href="#" data-view="indicador" id="link-indicador">Por Dimensão</a>
@@ -46,8 +46,9 @@
           <button class="menu-toggle" id="menu-toggle" aria-label="Abrir menu">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
           </button>
-          <div><h2 id="titulo-pagina">Relatório por Cliente</h2><div class="sub" id="sub-pagina">Acompanhe a saúde de um cliente específico, de todas as suas pesquisas</div></div>
+          <div><h2 id="titulo-pagina">Análise por Cliente</h2><div class="sub" id="sub-pagina">Acompanhe a saúde de um cliente específico, de todas as suas pesquisas</div></div>
         </div>
+        <button class="btn btn-outline-dark btn-pdf-web" id="btn-pdf" style="padding:9px 16px;font-size:12.5px;">📥 Gerar PDF</button>
       </div>
 
       <div class="content">
@@ -121,6 +122,10 @@
   .card-head h3{font-size:14.5px;}
   .grid-2{display:grid;grid-template-columns:1.4fr 1fr;gap:16px;margin-bottom:20px;}
   @media(max-width:900px){.grid-2{grid-template-columns:1fr;}}
+  /* Gerar PDF é recurso de tela grande (o PDF em si já é pensado pra
+     impressão/desktop) — escondido no mobile, mesmo padrão já usado nos
+     botões de PDF/Modo Apresentação do Dashboard. */
+  @media(max-width:900px){.btn-pdf-web{display:none !important;}}
 
   .kpi-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:20px;}
   @media(max-width:900px){.kpi-grid{grid-template-columns:repeat(2,1fr);}}
@@ -357,13 +362,54 @@
       document.getElementById('view-indicador').style.display = view === 'indicador' ? 'block' : 'none';
       document.getElementById('link-cliente').classList.toggle('ativo', view === 'cliente');
       document.getElementById('link-indicador').classList.toggle('ativo', view === 'indicador');
-      document.getElementById('titulo-pagina').textContent = view === 'cliente' ? 'Relatório por Cliente' : 'Relatório por Dimensão';
+      document.getElementById('titulo-pagina').textContent = view === 'cliente' ? 'Análise por Cliente' : 'Análise por Dimensão';
       document.getElementById('sub-pagina').textContent = view === 'cliente'
         ? 'Acompanhe a saúde de um cliente específico, de todas as suas pesquisas'
         : 'Compare todos os clientes numa dimensão específica — Atendimento, Infraestrutura, Tecnologia ou Valor Percebido';
     }
 
     document.getElementById('link-cliente').addEventListener('click', (e) => { e.preventDefault(); mostrarView('cliente'); });
+
+    // "Gerar PDF" sempre reflete o que está na tela naquele momento — pega
+    // o cliente ou a dimensão atualmente selecionados, não algo separado.
+    document.getElementById('btn-pdf').addEventListener('click', async () => {
+      const btn = document.getElementById('btn-pdf');
+      const textoOriginal = btn.textContent;
+      const viewAtiva = document.getElementById('view-cliente').style.display !== 'none' ? 'cliente' : 'indicador';
+      let url, nomeArquivo;
+
+      if (viewAtiva === 'cliente') {
+        const clienteId = document.getElementById('select-cliente').value;
+        if (!clienteId) { mostrarMensagem('Selecione um cliente primeiro.', 'error'); return; }
+        url = `/api/relatorios/clientes/${clienteId}/pdf`;
+        nomeArquivo = 'analise-cliente.pdf';
+      } else {
+        const tabAtiva = document.querySelector('.indicador-tab.ativo');
+        if (!tabAtiva) { mostrarMensagem('Selecione uma dimensão primeiro.', 'error'); return; }
+        url = `/api/relatorios/dimensoes/${tabAtiva.dataset.chave}/pdf`;
+        nomeArquivo = `analise-dimensao-${tabAtiva.dataset.chave}.pdf`;
+      }
+
+      btn.textContent = 'Gerando...';
+      btn.disabled = true;
+      try {
+        const resp = await fetch(url, { headers: { Authorization: 'Bearer ' + token } });
+        if (!resp.ok) throw new Error('Falha ao gerar o PDF.');
+        const blob = await resp.blob();
+        const blobUrl = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = blobUrl;
+        a.download = nomeArquivo;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+      } catch (err) {
+        mostrarMensagem('Erro ao exportar PDF: ' + err.message, 'error');
+      } finally {
+        btn.textContent = textoOriginal;
+        btn.disabled = false;
+      }
+    });
     document.getElementById('link-indicador').addEventListener('click', (e) => { e.preventDefault(); mostrarView('indicador'); });
 
     const toggleBtn = document.getElementById('toggle-relatorios');

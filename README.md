@@ -235,6 +235,10 @@ node tests/test_tv_slides_dimensao.js
 # Testes das 5 correções pontuais pós-Sprint 10 (Modo TV com 6 slides, valores
 # nos gráficos, CSS do Meu Perfil, cabeçalhos anti-cache)
 node tests/test_correcoes_finais.js
+
+# Testes do Sprint 11 / v1.2 (PDF por filtro nas telas de Análises, QR Code
+# do link público da pesquisa)
+node tests/test_v12_pdf_qrcode.js
 ```
 
 Ambos assumem que o servidor já está rodando e que o seed do gestor inicial já foi executado.

@@ -35,7 +35,7 @@
         <a href="/app/empresas.html">🏢 Empresas</a>
         <a href="/app/usuarios.html">👥 Usuários</a>
         <div class="side-nav-grupo">
-          <button class="side-nav-toggle" id="toggle-relatorios">📈 Relatórios <span class="chev">▾</span></button>
+          <button class="side-nav-toggle" id="toggle-relatorios">📈 Análises <span class="chev">▾</span></button>
           <div class="side-nav-sub" id="sub-relatorios">
             <a href="/app/relatorios.html?view=cliente">Por Cliente</a>
             <a href="/app/relatorios.html?view=indicador">Por Dimensão</a>
@@ -137,6 +137,8 @@
   .client-tag{display:inline-flex;align-items:center;gap:6px;background:var(--cinza-claro);border-radius:20px;padding:6px 12px;font-size:12.5px;font-weight:600;margin:3px;}
   .client-tag button{color:var(--cinza-medio);font-size:14px;line-height:1;background:none;}
   .link-box{background:var(--cinza-claro);border-radius:10px;padding:12px 14px;font-size:12.5px;word-break:break-all;margin-top:10px;display:flex;justify-content:space-between;gap:10px;align-items:center;}
+  .qr-box{display:flex;gap:14px;align-items:center;margin-top:14px;padding:14px;background:#fff;border:1px solid #EEF2F7;border-radius:10px;max-width:460px;}
+  .qr-box img{border-radius:6px;border:1px solid #EEF2F7;flex-shrink:0;background:#fff;}
   .alert-box{padding:12px 16px;border-radius:10px;font-size:13px;font-weight:600;margin-bottom:16px;}
   .alert-error{background:#FEE2E2;color:#B91C1C;}
   .alert-success{background:#DCFCE7;color:#15803D;}
@@ -360,6 +362,13 @@
         if (pesquisaAtual.status === 'inativa') {
           html += `<p style="font-size:11.5px;color:var(--cinza-medio);margin-top:6px;">O link continua existindo, mas quem acessar vê um aviso de que a pesquisa está inativa — não é mais possível responder.</p>`;
         }
+        html += `<div class="qr-box">
+          <img id="qr-code-img" alt="QR Code da pesquisa" width="120" height="120">
+          <div>
+            <p style="font-size:12px;font-weight:600;color:var(--azul-profundo);margin-bottom:4px;">QR Code da pesquisa</p>
+            <p style="font-size:11.5px;color:var(--cinza-medio);">Aponte a câmera do celular pra entrar direto. Clique com o botão direito (ou pressione e segure no celular) pra salvar a imagem.</p>
+          </div>
+        </div>`;
       }
 
       html += `<div style="margin-top:24px;padding-top:16px;border-top:1px dashed #FEE2E2;">
@@ -367,6 +376,10 @@
       </div>`;
 
       document.getElementById('wizard-body').innerHTML = html;
+
+      if (pesquisaAtual.status === 'ativa' || pesquisaAtual.status === 'inativa') {
+        carregarQrCode();
+      }
     }
 
     function renderClientes() {
@@ -474,6 +487,21 @@
 
     function copiarLink(link) {
       navigator.clipboard.writeText(link).then(() => mostrarMensagem('Link copiado!', 'success'));
+    }
+
+    // O endpoint do QR Code exige login (mesma trava de todas as rotas de
+    // pesquisa), e uma tag <img src="..."> não consegue mandar o cabeçalho
+    // de autenticação sozinha — por isso buscamos a imagem via fetch()
+    // autenticado e convertemos pra um blob local que o <img> consegue usar.
+    async function carregarQrCode() {
+      const img = document.getElementById('qr-code-img');
+      if (!img) return;
+      try {
+        const resp = await fetch(`/api/pesquisas/${pesquisaId}/qrcode`, { headers: { Authorization: 'Bearer ' + token } });
+        if (!resp.ok) throw new Error('Falha ao gerar QR Code.');
+        const blob = await resp.blob();
+        img.src = URL.createObjectURL(blob);
+      } catch (err) { /* QR Code é um extra visual — se falhar, o link e o botão Copiar continuam funcionando normalmente */ }
     }
 
     // ================= INICIALIZAÇÃO =================
