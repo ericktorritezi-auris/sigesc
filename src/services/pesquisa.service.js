@@ -1,4 +1,5 @@
 const crypto = require('crypto');
+const QRCode = require('qrcode');
 const { pool, query } = require('../config/db');
 const { gestorEfetivoId } = require('./empresa.service');
 const {
@@ -408,6 +409,19 @@ async function excluirPesquisa(usuarioAutenticado, pesquisaId) {
   return { excluida: true };
 }
 
+/**
+ * Gera o QR Code do link público da pesquisa — direto no servidor, sem
+ * depender de nenhum serviço externo de terceiros (mesma filosofia do PDF:
+ * biblioteca JS pura, funciona igual em qualquer ambiente). Retorna um
+ * Buffer PNG, pronto pra servir via HTTP.
+ */
+async function gerarQrCodePesquisa(usuarioAutenticado, pesquisaId) {
+  const pesquisa = await carregarPesquisaOuFalhar(usuarioAutenticado, pesquisaId);
+  const link = `${process.env.APP_URL}/p/${pesquisa.slug_link_publico}`;
+  const buffer = await QRCode.toBuffer(link, { width: 400, margin: 1, color: { dark: '#0D1B2A', light: '#FFFFFF' } });
+  return buffer;
+}
+
 async function duplicarPesquisa(usuarioAutenticado, pesquisaId, { empresaId, mesmoCiclo }) {
   const original = await carregarPesquisaOuFalhar(usuarioAutenticado, pesquisaId);
   const gestorId = gestorEfetivoId(usuarioAutenticado);
@@ -507,6 +521,7 @@ module.exports = {
   ativarPesquisa,
   inativarPesquisa,
   excluirPesquisa,
+  gerarQrCodePesquisa,
   duplicarPesquisa,
   AppError,
 };

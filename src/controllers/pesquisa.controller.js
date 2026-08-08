@@ -118,6 +118,16 @@ async function deletePesquisa(req, res, next) {
   }
 }
 
+async function getQrCode(req, res, next) {
+  try {
+    const buffer = await pesquisaService.gerarQrCodePesquisa(req.usuario, req.params.id);
+    res.setHeader('Content-Type', 'image/png');
+    res.status(200).send(buffer);
+  } catch (err) {
+    tratarErro(err, res, next);
+  }
+}
+
 async function postDuplicar(req, res, next) {
   try {
     const pesquisa = await pesquisaService.duplicarPesquisa(req.usuario, req.params.id, req.body);
@@ -160,6 +170,7 @@ module.exports = {
   postAtivar,
   postInativar,
   deletePesquisa,
+  getQrCode,
   postDuplicar,
   getEvolucaoCiclo,
   getRankingCiclo,

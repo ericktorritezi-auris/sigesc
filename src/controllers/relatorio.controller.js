@@ -1,4 +1,12 @@
 const relatorioService = require('../services/relatorio.service');
+const { gerarPdfAnaliseCliente, gerarPdfAnaliseDimensao } = require('../services/pdf.service');
+
+const DIMENSOES_INFO = {
+  isa: { label: 'Atendimento', sigla: 'ISA' },
+  ise: { label: 'Infraestrutura', sigla: 'ISE' },
+  ist: { label: 'Tecnologia', sigla: 'IST' },
+  isv: { label: 'Valor Percebido', sigla: 'ISV' },
+};
 
 function tratarErro(err, res, next) {
   if (err instanceof relatorioService.AppError) {
@@ -34,4 +42,32 @@ async function getRelatorioDimensao(req, res, next) {
   }
 }
 
-module.exports = { getClientes, getRelatorioCliente, getRelatorioDimensao };
+async function getPdfCliente(req, res, next) {
+  try {
+    const dados = await relatorioService.buscarRelatorioCliente(req.usuario, req.params.clienteId);
+    const buffer = await gerarPdfAnaliseCliente({ ...dados, versao: process.env.APP_VERSION || '1.2' });
+    const nomeArquivo = `analise-${dados.cliente.nome.toLowerCase().replace(/[^a-z0-9]+/g, '-')}.pdf`;
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${nomeArquivo}"`);
+    res.status(200).send(buffer);
+  } catch (err) {
+    tratarErro(err, res, next);
+  }
+}
+
+async function getPdfDimensao(req, res, next) {
+  try {
+    const dados = await relatorioService.buscarRelatorioDimensao(req.usuario, req.params.dimensao);
+    const info = DIMENSOES_INFO[req.params.dimensao];
+    if (!info) return res.status(400).json({ erro: 'Dimensão inválida.' });
+    const buffer = await gerarPdfAnaliseDimensao({ ...dados, ...info, versao: process.env.APP_VERSION || '1.2' });
+    const nomeArquivo = `analise-dimensao-${req.params.dimensao}.pdf`;
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${nomeArquivo}"`);
+    res.status(200).send(buffer);
+  } catch (err) {
+    tratarErro(err, res, next);
+  }
+}
+
+module.exports = { getClientes, getRelatorioCliente, getRelatorioDimensao, getPdfCliente, getPdfDimensao };

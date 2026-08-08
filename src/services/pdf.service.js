@@ -472,4 +472,178 @@ function gerarRecomendacoes(dashboard) {
   return recs;
 }
 
-module.exports = { gerarRelatorioPDF };
+/**
+ * PDF focado — Análise por Cliente. Diferente do relatório executivo do
+ * Ciclo (gerarRelatorioPDF), esse "imprime" exatamente o que a tela de
+ * Análises mostra pra UM cliente específico — usado pelo botão "Gerar PDF"
+ * daquela tela (só disponível na web, não no mobile).
+ */
+function gerarPdfAnaliseCliente({ cliente, kpis, historico, totalRespostas, ultimaResposta, mediaCarteira, versao }) {
+  return new Promise((resolve, reject) => {
+    const doc = new PDFDocument({ size: [LARGURA, ALTURA], margin: 0 });
+    const chunks = [];
+    doc.on('data', (chunk) => chunks.push(chunk));
+    doc.on('end', () => resolve(Buffer.concat(chunks)));
+    doc.on('error', reject);
+
+    fundoEscuro(doc);
+    marcaSigesc(doc, true);
+
+    doc.font('Helvetica-Bold').fontSize(11).fillColor(CORES.verdeAgua).text('ANÁLISE POR CLIENTE', 40, 70);
+    doc.font('Helvetica-Bold').fontSize(26).fillColor(CORES.branco).text(cliente.nome, 40, 96, { width: 860 });
+    doc.font('Helvetica').fontSize(12).fillColor('#C9D3E0').text(cliente.empresa, 40, 132);
+
+    if (!kpis) {
+      doc.font('Helvetica').fontSize(13).fillColor('#C9D3E0').text('Este cliente ainda não tem indicadores calculados.', 40, 180);
+      rodape(doc, versao, true);
+      doc.end();
+      return;
+    }
+
+    const kpiItens = [
+      ['Score Geral', kpis.score_geral], ['ISA · Atendimento', kpis.isa], ['ISE · Infraestrutura', kpis.ise],
+      ['IST · Tecnologia', kpis.ist], ['ISV · Valor Percebido', kpis.isv],
+    ];
+    const larguraKpi = 168;
+    kpiItens.forEach(([label, valor], i) => {
+      const x = 40 + i * (larguraKpi + 10);
+      const y = 175;
+      doc.fillOpacity(0.06); doc.roundedRect(x, y, larguraKpi, 110, 10).fill(CORES.branco); doc.fillOpacity(1);
+      doc.font('Helvetica-Bold').fontSize(26).fillColor(corFaixa(valor)).text(Number(valor).toFixed(1).replace('.', ','), x + 16, y + 18);
+      doc.font('Helvetica').fontSize(9.5).fillColor('#B9C4D6').text(label, x + 16, y + 56, { width: larguraKpi - 32 });
+      badge(doc, x + 16, y + 76, labelFaixa(valor), corFaixa(valor));
+    });
+
+    // Evolução mensal
+    doc.font('Helvetica-Bold').fontSize(13).fillColor(CORES.branco).text('Evolução mensal', 40, 315);
+    if (historico.length > 0) {
+      const chartX = 60, chartY = 340, chartW = 550, chartH = 125;
+      for (let g = 1; g <= 3; g++) {
+        const gy = chartY + (chartH / 4) * g;
+        doc.strokeOpacity(0.08); doc.moveTo(chartX, gy).lineTo(chartX + chartW, gy).lineWidth(0.5).stroke(CORES.branco); doc.strokeOpacity(1);
+      }
+      const pontos = historico.map((h, i) => {
+        const x = historico.length === 1 ? chartX + chartW / 2 : chartX + (i / (historico.length - 1)) * chartW;
+        const y = chartY + chartH - 14 - (Number(h.score_geral) / 10) * (chartH - 24);
+        return { x, y, valor: Number(h.score_geral) };
+      });
+      doc.moveTo(pontos[0].x, pontos[0].y);
+      for (let i = 1; i < pontos.length; i++) doc.lineTo(pontos[i].x, pontos[i].y);
+      doc.lineWidth(3).stroke(CORES.verdeAgua);
+      pontos.forEach((p) => {
+        doc.circle(p.x, p.y, 4).fill(CORES.verdeAgua);
+        doc.font('Helvetica-Bold').fontSize(10).fillColor(CORES.verdeAgua).text(p.valor.toFixed(1).replace('.', ','), p.x - 18, p.y - 18, { width: 36, align: 'center' });
+      });
+      doc.font('Helvetica').fontSize(8.5).fillColor('#8FA0B8');
+      historico.forEach((h, i) => {
+        const x = historico.length === 1 ? chartX + chartW / 2 : chartX + (i / (historico.length - 1)) * chartW;
+        doc.text(formatMes(h.ano_mes), x - 15, chartY + chartH + 8);
+      });
+    } else {
+      doc.font('Helvetica').fontSize(11).fillColor('#C9D3E0').text('Sem histórico mensal suficiente ainda.', 40, 360);
+    }
+
+    // Comparação com a carteira
+    const colX = 660;
+    doc.font('Helvetica-Bold').fontSize(13).fillColor(CORES.branco).text('Vs. média da carteira', colX, 315);
+    if (mediaCarteira !== null) {
+      const score = Number(kpis.score_geral);
+      const trackW = 220;
+      doc.font('Helvetica').fontSize(10).fillColor('#B9C4D6').text(cliente.nome.split(' ').slice(0, 3).join(' '), colX, 360, { width: trackW });
+      doc.fillOpacity(0.1); doc.roundedRect(colX, 376, trackW, 8, 4).fill(CORES.branco); doc.fillOpacity(1);
+      doc.roundedRect(colX, 376, Math.min(trackW, (score / 10) * trackW), 8, 4).fill(corFaixa(score));
+      doc.font('Helvetica-Bold').fontSize(11).fillColor(corFaixa(score)).text(score.toFixed(1).replace('.', ','), colX + trackW + 8, 372);
+
+      doc.font('Helvetica').fontSize(10).fillColor('#B9C4D6').text('Média da carteira', colX, 404, { width: trackW });
+      doc.fillOpacity(0.1); doc.roundedRect(colX, 420, trackW, 8, 4).fill(CORES.branco); doc.fillOpacity(1);
+      doc.roundedRect(colX, 420, Math.min(trackW, (mediaCarteira / 10) * trackW), 8, 4).fill('#94A3B8');
+      doc.font('Helvetica-Bold').fontSize(11).fillColor('#CBD5E1').text(mediaCarteira.toFixed(1).replace('.', ','), colX + trackW + 8, 416);
+    }
+
+    doc.font('Helvetica-Bold').fontSize(13).fillColor(CORES.branco).text('Resumo', colX, 450);
+    doc.font('Helvetica').fontSize(10.5).fillColor('#C9D3E0').text(`Total de respostas recebidas: ${totalRespostas}`, colX, 478);
+    doc.text(`Última resposta: ${ultimaResposta ? new Date(ultimaResposta).toLocaleDateString('pt-BR') : '—'}`, colX, 494);
+
+    rodape(doc, versao, true);
+    doc.end();
+  });
+}
+
+/**
+ * PDF focado — Análise por Dimensão. Mesma ideia: "imprime" exatamente o
+ * que a tela mostra pra UMA dimensão específica (ex: só Tecnologia).
+ */
+function gerarPdfAnaliseDimensao({ dimensao, label, sigla, media, ranking, evolucaoMensal, versao }) {
+  return new Promise((resolve, reject) => {
+    const doc = new PDFDocument({ size: [LARGURA, ALTURA], margin: 0 });
+    const chunks = [];
+    doc.on('data', (chunk) => chunks.push(chunk));
+    doc.on('end', () => resolve(Buffer.concat(chunks)));
+    doc.on('error', reject);
+
+    fundoEscuro(doc);
+    marcaSigesc(doc, true);
+
+    doc.font('Helvetica-Bold').fontSize(11).fillColor(CORES.verdeAgua).text('ANÁLISE POR DIMENSÃO', 40, 70);
+    doc.font('Helvetica-Bold').fontSize(26).fillColor(CORES.branco).text(`${sigla} · ${label}`, 40, 96);
+
+    if (media === null) {
+      doc.font('Helvetica').fontSize(13).fillColor('#C9D3E0').text('Nenhum dado calculado ainda pra essa dimensão.', 40, 150);
+      rodape(doc, versao, true);
+      doc.end();
+      return;
+    }
+
+    doc.fillOpacity(0.06); doc.roundedRect(40, 145, 260, 100, 12).fill(CORES.branco); doc.fillOpacity(1);
+    doc.font('Helvetica-Bold').fontSize(34).fillColor(corFaixa(media)).text(Number(media).toFixed(1).replace('.', ','), 60, 168);
+    doc.font('Helvetica').fontSize(10.5).fillColor('#B9C4D6').text('MÉDIA GERAL DA CARTEIRA', 60, 210);
+    badge(doc, 60, 226, labelFaixa(media), corFaixa(media));
+
+    // Evolução mensal da média
+    doc.font('Helvetica-Bold').fontSize(13).fillColor(CORES.branco).text('Evolução da média geral', 340, 150);
+    if (evolucaoMensal.length > 0) {
+      const chartX = 340, chartY = 185, chartW = 560, chartH = 105;
+      const pontos = evolucaoMensal.map((e, i) => {
+        const x = evolucaoMensal.length === 1 ? chartX + chartW / 2 : chartX + (i / (evolucaoMensal.length - 1)) * chartW;
+        const y = chartY + chartH - 12 - (Number(e.media) / 10) * (chartH - 22);
+        return { x, y, valor: Number(e.media) };
+      });
+      doc.moveTo(pontos[0].x, pontos[0].y);
+      for (let i = 1; i < pontos.length; i++) doc.lineTo(pontos[i].x, pontos[i].y);
+      doc.lineWidth(2.5).stroke(corFaixa(media));
+      pontos.forEach((p) => {
+        doc.circle(p.x, p.y, 3.5).fill(corFaixa(media));
+        doc.font('Helvetica-Bold').fontSize(9).fillColor(corFaixa(media)).text(p.valor.toFixed(1).replace('.', ','), p.x - 16, p.y - 15, { width: 32, align: 'center' });
+      });
+      doc.font('Helvetica').fontSize(8).fillColor('#8FA0B8');
+      evolucaoMensal.forEach((e, i) => {
+        const x = evolucaoMensal.length === 1 ? chartX + chartW / 2 : chartX + (i / (evolucaoMensal.length - 1)) * chartW;
+        doc.text(formatMes(e.ano_mes), x - 15, chartY + chartH + 4);
+      });
+    }
+
+    // Ranking completo
+    doc.font('Helvetica-Bold').fontSize(13).fillColor(CORES.branco).text('Ranking completo — melhor para o pior', 40, 320);
+    // Duas colunas — garante que cabe na página mesmo com carteira maior,
+    // sem precisar cortar nenhum cliente do ranking.
+    const metade = Math.ceil(ranking.length / 2);
+    ranking.forEach((r, i) => {
+      const coluna = i < metade ? 0 : 1;
+      const linhaNaColuna = i < metade ? i : i - metade;
+      const xBase = 40 + coluna * 470;
+      const y = 355 + linhaNaColuna * 27;
+      if (y > 500) return; // segurança extra — nunca desenha além da área do rodapé
+      const cor = corFaixa(r.valor);
+      doc.circle(xBase + 16, y + 8, 9).fill(cor);
+      doc.font('Helvetica-Bold').fontSize(8.5).fillColor(CORES.branco).text(String(i + 1), xBase + 12.5, y + 4.5);
+      doc.font('Helvetica').fontSize(9.5).fillColor(CORES.branco).text(r.nomeCliente, xBase + 34, y + 1, { width: 250 });
+      doc.font('Helvetica').fontSize(8).fillColor('#8FA0B8').text(r.empresaNome, xBase + 34, y + 13, { width: 250 });
+      doc.font('Helvetica-Bold').fontSize(11).fillColor(cor).text(Number(r.valor).toFixed(1).replace('.', ','), xBase + 400, y + 5);
+    });
+
+    rodape(doc, versao, true);
+    doc.end();
+  });
+}
+
+module.exports = { gerarRelatorioPDF, gerarPdfAnaliseCliente, gerarPdfAnaliseDimensao };

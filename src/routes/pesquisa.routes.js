@@ -21,6 +21,7 @@ router.delete('/:id/clientes/:clienteId', pesquisaController.deleteCliente);
 router.post('/:id/ativar', pesquisaController.postAtivar);
 router.post('/:id/inativar', pesquisaController.postInativar);
 router.delete('/:id', pesquisaController.deletePesquisa);
+router.get('/:id/qrcode', pesquisaController.getQrCode);
 router.post('/:id/duplicar', pesquisaController.postDuplicar);
 
 router.get('/:id/ciclo/evolucao', pesquisaController.getEvolucaoCiclo);
