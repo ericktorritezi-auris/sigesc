@@ -201,15 +201,18 @@ async function buscarRankingClientesCiclo(cicloId, anoMes) {
 }
 
 /**
- * Classifica um score geral na faixa de saúde padrão do SIGESC.
- * Mesmos limiares usados em toda a experiência (demo, PDF executivo, etc).
+ * Classifica um score geral na faixa de saúde padrão do SIGESC — 6 faixas,
+ * v1.3 (07/08/2026). Mesmos limiares usados em toda a experiência (Dashboard,
+ * PDF executivo, Modo Apresentação, Análises).
  */
 function faixaDeSaude(scoreGeral) {
   const v = Number(scoreGeral);
-  if (v >= 8.5) return 'excelente';
-  if (v >= 7) return 'saudavel';
-  if (v >= 5) return 'atencao';
-  return 'critico';
+  if (v >= 9.5) return 'excelencia';
+  if (v >= 9.0) return 'muito_saudavel';
+  if (v >= 8.0) return 'saudavel';
+  if (v >= 7.0) return 'em_atencao';
+  if (v >= 6.0) return 'critico';
+  return 'alto_risco';
 }
 
 /**
@@ -218,7 +221,8 @@ function faixaDeSaude(scoreGeral) {
  */
 async function buscarDistribuicaoSaude(cicloId, anoMes) {
   const anoMesFinal = anoMes || (await buscarUltimoAnoMesCiclo(cicloId));
-  if (!anoMesFinal) return { anoMes: null, distribuicao: { excelente: 0, saudavel: 0, atencao: 0, critico: 0 } };
+  const distribuicaoVazia = { excelencia: 0, muito_saudavel: 0, saudavel: 0, em_atencao: 0, critico: 0, alto_risco: 0 };
+  if (!anoMesFinal) return { anoMes: null, distribuicao: distribuicaoVazia };
 
   const { rows } = await query(
     `SELECT im.score_geral
@@ -229,7 +233,7 @@ async function buscarDistribuicaoSaude(cicloId, anoMes) {
     [cicloId, anoMesFinal]
   );
 
-  const distribuicao = { excelente: 0, saudavel: 0, atencao: 0, critico: 0 };
+  const distribuicao = { ...distribuicaoVazia };
   rows.forEach((r) => { distribuicao[faixaDeSaude(r.score_geral)]++; });
 
   return { anoMes: anoMesFinal, distribuicao, total: rows.length };

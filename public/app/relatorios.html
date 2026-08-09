@@ -144,6 +144,12 @@
   .badge-saudavel{background:#DBEAFE;color:#1D4ED8;}
   .badge-atencao{background:#FEF3C7;color:#B45309;}
   .badge-critico{background:#FEE2E2;color:#B91C1C;}
+  .faixa-excelencia{background:#CCFBF1;color:#0F766E;}
+  .faixa-muito-saudavel{background:#DCFCE7;color:#15803D;}
+  .faixa-saudavel{background:#DBEAFE;color:#1D4ED8;}
+  .faixa-em-atencao{background:#FEF3C7;color:#B45309;}
+  .faixa-critico{background:#FFEDD5;color:#C2410C;}
+  .faixa-alto-risco{background:#FEE2E2;color:#B91C1C;}
 
   .chart-x-labels{display:flex;justify-content:space-between;font-size:10.5px;color:var(--cinza-medio);margin-top:4px;padding:0 4px;}
 
@@ -189,17 +195,21 @@
 
     function corFaixa(v) {
       v = Number(v);
-      if (v >= 8.5) return '#22C55E';
-      if (v >= 7) return '#2563EB';
-      if (v >= 5) return '#F59E0B';
+      if (v >= 9.5) return '#00B4A6';
+      if (v >= 9.0) return '#22C55E';
+      if (v >= 8.0) return '#2563EB';
+      if (v >= 7.0) return '#F59E0B';
+      if (v >= 6.0) return '#EA580C';
       return '#EF4444';
     }
     function badgeFaixa(v) {
       v = Number(v);
-      if (v >= 8.5) return '<span class="badge badge-excelente">Excelente</span>';
-      if (v >= 7) return '<span class="badge badge-saudavel">Saudável</span>';
-      if (v >= 5) return '<span class="badge badge-atencao">Atenção</span>';
-      return '<span class="badge badge-critico">Crítico</span>';
+      if (v >= 9.5) return '<span class="badge faixa-excelencia">Excelência</span>';
+      if (v >= 9.0) return '<span class="badge faixa-muito-saudavel">Muito Saudável</span>';
+      if (v >= 8.0) return '<span class="badge faixa-saudavel">Saudável</span>';
+      if (v >= 7.0) return '<span class="badge faixa-em-atencao">Em Atenção</span>';
+      if (v >= 6.0) return '<span class="badge faixa-critico">Crítico</span>';
+      return '<span class="badge faixa-alto-risco">Alto Risco</span>';
     }
     function fmt(v) { return v === null || v === undefined ? '—' : Number(v).toFixed(1).replace('.', ','); }
     function formatMes(anoMes) {

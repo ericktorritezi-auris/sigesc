@@ -17,20 +17,26 @@ const CORES = {
 const LARGURA = 960;
 const ALTURA = 540;
 
+const CORES_LARANJA_CRITICO = '#EA580C';
+
 function corFaixa(scoreGeral) {
   const v = Number(scoreGeral);
-  if (v >= 8.5) return CORES.verdeSucesso;
-  if (v >= 7) return CORES.azulInteligente;
-  if (v >= 5) return CORES.amareloAtencao;
+  if (v >= 9.5) return CORES.verdeAgua;
+  if (v >= 9.0) return CORES.verdeSucesso;
+  if (v >= 8.0) return CORES.azulInteligente;
+  if (v >= 7.0) return CORES.amareloAtencao;
+  if (v >= 6.0) return CORES_LARANJA_CRITICO;
   return CORES.vermelhoCritico;
 }
 
 function labelFaixa(scoreGeral) {
   const v = Number(scoreGeral);
-  if (v >= 8.5) return 'Excelente';
-  if (v >= 7) return 'Saudável';
-  if (v >= 5) return 'Atenção';
-  return 'Crítico';
+  if (v >= 9.5) return 'Excelência';
+  if (v >= 9.0) return 'Muito Saudável';
+  if (v >= 8.0) return 'Saudável';
+  if (v >= 7.0) return 'Em Atenção';
+  if (v >= 6.0) return 'Crítico';
+  return 'Alto Risco';
 }
 
 function formatMes(anoMes) {
@@ -273,10 +279,12 @@ function gerarRelatorioPDF({ cicloTitulo, organizacaoNome, gestorNome, versao, d
     const distr = dashboard.distribuicaoSaude.distribuicao;
     const totalDistr = dashboard.distribuicaoSaude.total || 1;
     const faixas = [
-      ['excelente', 'Excelente', CORES.verdeSucesso],
+      ['excelencia', 'Excelência', CORES.verdeAgua],
+      ['muito_saudavel', 'Muito Saudável', CORES.verdeSucesso],
       ['saudavel', 'Saudável', CORES.azulInteligente],
-      ['atencao', 'Atenção', CORES.amareloAtencao],
-      ['critico', 'Crítico', CORES.vermelhoCritico],
+      ['em_atencao', 'Em Atenção', CORES.amareloAtencao],
+      ['critico', 'Crítico', CORES_LARANJA_CRITICO],
+      ['alto_risco', 'Alto Risco', CORES.vermelhoCritico],
     ];
     let barX = 520;
     const barY = 210, barW = 380, barH = 26;
