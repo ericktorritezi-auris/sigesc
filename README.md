@@ -239,6 +239,9 @@ node tests/test_correcoes_finais.js
 # Testes do Sprint 11 / v1.2 (PDF por filtro nas telas de Análises, QR Code
 # do link público da pesquisa)
 node tests/test_v12_pdf_qrcode.js
+
+# Teste do Sprint 13 / v1.4 (rodapé white-label controlado pelo Administrador)
+node tests/test_rodape_whitelabel.js
 ```
 
 Ambos assumem que o servidor já está rodando e que o seed do gestor inicial já foi executado.

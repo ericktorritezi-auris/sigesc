@@ -159,7 +159,7 @@
           mostrarMensagem('Você está vendo em modo leitura — apenas o gestor pode alterar as configurações.', 'error');
         }
       } catch (err) { window.location.href = '/login.html'; return; }
-      document.getElementById('sys-versao').textContent = 'v' + (await buscarVersaoReal());
+      document.getElementById('sys-versao').textContent = 'v' + (await buscarConfiguracaoRodape()).versao;
       carregar();
     })();
 

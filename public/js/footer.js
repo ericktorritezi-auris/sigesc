@@ -1,28 +1,36 @@
-// Rodapé padrão SIGESC — versão vem de verdade da variável de ambiente
-// APP_VERSION do servidor (via /health, que já expõe isso), não mais de um
-// atributo fixo no HTML. Bug real encontrado em 07/08/2026: o comentário
-// antigo dizia que a versão vinha do <body data-app-version="...">, mas
-// esse valor estava sempre hardcoded como "1.0" direto no HTML de cada
-// página — mudar a variável de ambiente no Railway nunca teve efeito
-// nenhum no que aparecia no rodapé.
-let versaoCache = null;
+// Rodapé padrão SIGESC — versão e configuração do rodapé (habilitado/
+// desabilitado + texto substituto) vêm de verdade do servidor via /health.
+// Configuração de white-label: o Administrador pode desligar o "Desenvolvido
+// por Belle Planner" (07/08/2026) — quando desligado, mostra um texto
+// substituto customizado (ou nada, se ele deixar em branco). A linha
+// divisória do rodapé continua aparecendo de qualquer jeito — só o texto é
+// condicional.
+let configCache = null;
 
-async function buscarVersaoReal() {
-  if (versaoCache) return versaoCache;
+async function buscarConfiguracaoRodape() {
+  if (configCache) return configCache;
   try {
     const resp = await fetch('/health');
     const data = await resp.json();
-    versaoCache = data.versao || '1.0';
+    configCache = {
+      versao: data.versao || '1.0',
+      rodapeHabilitado: data.rodapeHabilitado !== false,
+      rodapeTexto: data.rodapeTexto || '',
+    };
   } catch (err) {
-    versaoCache = document.body.dataset.appVersion || '1.0'; // fallback, se o /health falhar por qualquer motivo
+    // fallback, se o /health falhar por qualquer motivo — mantém o rodapé oficial
+    configCache = { versao: document.body.dataset.appVersion || '1.0', rodapeHabilitado: true, rodapeTexto: '' };
   }
-  return versaoCache;
+  return configCache;
 }
 
 async function montarRodape() {
-  const versao = await buscarVersaoReal();
+  const config = await buscarConfiguracaoRodape();
+  if (!config.rodapeHabilitado) {
+    return config.rodapeTexto || '';
+  }
   const ano = new Date().getFullYear();
-  return `SIGESC v${versao} · Desenvolvido por <b>Belle Planner</b> · © ${ano} Belle Planner. Todos os direitos reservados.`;
+  return `SIGESC v${config.versao} · Desenvolvido por <b>Belle Planner</b> · © ${ano} Belle Planner. Todos os direitos reservados.`;
 }
 
 async function inserirRodape(elementId, dark) {

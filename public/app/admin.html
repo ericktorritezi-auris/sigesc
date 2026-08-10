@@ -58,6 +58,26 @@
           <div class="pagination"><span id="pag-label"></span><div class="page-btns" id="pag-btns"></div></div>
         </div>
 
+        <!-- RODAPÉ DO SISTEMA (WHITE-LABEL) -->
+        <div class="card" style="margin-top:24px;">
+          <div class="card-head"><h3>🏷️ Rodapé do sistema</h3></div>
+          <p style="font-size:13px;color:var(--cinza-medio);margin-bottom:18px;">Controla se o rodapé oficial ("Desenvolvido por Belle Planner") aparece em todo o sistema — telas internas, formulário público de pesquisas e PDFs. Útil pra clientes que preferem não expor que o sistema é white-label.</p>
+
+          <label class="toggle-row" style="margin-bottom:14px;">
+            <div><strong>Mostrar rodapé oficial</strong><p>Quando desligado, você pode colocar um texto substituto (ou deixar em branco).</p></div>
+            <input type="checkbox" id="cfg-rodape-habilitado" checked>
+          </label>
+
+          <div id="campo-texto-rodape" style="display:none;">
+            <div class="field">
+              <label>Texto substituto (opcional)</label>
+              <input type="text" id="cfg-rodape-texto" placeholder="Deixe em branco para não mostrar nenhum texto" maxlength="200">
+            </div>
+          </div>
+
+          <button class="btn btn-primary" id="btn-salvar-rodape" style="padding:9px 18px;font-size:13px;">Salvar configuração de rodapé</button>
+        </div>
+
         <!-- ZONA DE PERIGO -->
         <div class="card" style="margin-top:24px;border:1.5px solid #FEE2E2;">
           <div class="card-head"><h3 style="color:#B91C1C;">⚠️ Zona de Perigo</h3></div>
@@ -121,6 +141,12 @@
   </div>
 
 <style>
+  .toggle-row{display:flex;justify-content:space-between;align-items:center;gap:16px;cursor:pointer;}
+  .toggle-row p{font-size:11.5px;color:var(--cinza-medio);margin-top:2px;}
+  .toggle-row input[type=checkbox]{width:40px;height:22px;flex-shrink:0;accent-color:var(--azul-inteligente);}
+  .field{margin-bottom:14px;}
+  .field label{display:block;font-size:12px;font-weight:600;color:var(--cinza-escuro);margin-bottom:6px;}
+  .field input{width:100%;max-width:420px;padding:10px 12px;border:1.5px solid #E2E8F0;border-radius:9px;font-family:inherit;font-size:13px;}
   .overlay{position:fixed;inset:0;background:rgba(13,27,42,.5);display:none;align-items:center;justify-content:center;z-index:100;padding:20px;}
   .overlay.active{display:flex;}
   .panel{background:#fff;border-radius:16px;max-width:640px;width:100%;max-height:88vh;overflow-y:auto;}
@@ -273,6 +299,37 @@
       abrirModal('modal-reset');
     });
 
+    // ================= RODAPÉ DO SISTEMA (WHITE-LABEL) =================
+    document.getElementById('cfg-rodape-habilitado').addEventListener('change', (e) => {
+      document.getElementById('campo-texto-rodape').style.display = e.target.checked ? 'none' : 'block';
+    });
+
+    async function carregarConfiguracaoRodape() {
+      try {
+        const { configuracao } = await apiFetch('/api/admin/configuracao-rodape');
+        document.getElementById('cfg-rodape-habilitado').checked = configuracao.rodapeHabilitado;
+        document.getElementById('cfg-rodape-texto').value = configuracao.rodapeTexto || '';
+        document.getElementById('campo-texto-rodape').style.display = configuracao.rodapeHabilitado ? 'none' : 'block';
+      } catch (err) {
+        mostrarMensagem('Erro ao carregar configuração de rodapé: ' + err.message, 'error');
+      }
+    }
+
+    document.getElementById('btn-salvar-rodape').addEventListener('click', async () => {
+      try {
+        await apiFetch('/api/admin/configuracao-rodape', {
+          method: 'PUT',
+          body: JSON.stringify({
+            rodapeHabilitado: document.getElementById('cfg-rodape-habilitado').checked,
+            rodapeTextoCustomizado: document.getElementById('cfg-rodape-texto').value,
+          }),
+        });
+        mostrarMensagem('Configuração de rodapé salva com sucesso!', 'success');
+      } catch (err) {
+        mostrarMensagem('Erro ao salvar: ' + err.message, 'error');
+      }
+    });
+
     document.getElementById('btn-confirmar-reset').addEventListener('click', async () => {
       const confirmacao = document.getElementById('reset-confirmacao').value;
       const checkbox = document.getElementById('reset-checkbox').checked;
@@ -298,6 +355,7 @@
         if (data.usuario.perfil !== 'administrador') { window.location.href = '/app/index.html'; return; }
       } catch (err) { window.location.href = '/login.html'; return; }
       carregarGestores(1);
+      carregarConfiguracaoRodape();
     })();
 
     document.getElementById('btn-logout').addEventListener('click', () => {
