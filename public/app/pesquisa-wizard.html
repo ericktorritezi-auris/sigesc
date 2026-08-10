@@ -53,7 +53,15 @@
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
           </button>
           <div>
-            <h2 id="page-title">Nova pesquisa</h2>
+            <div id="titulo-container" style="display:flex;align-items:center;gap:8px;">
+              <h2 id="page-title">Nova pesquisa</h2>
+              <button id="btn-editar-titulo" onclick="iniciarEdicaoTitulo()" title="Editar título" style="display:none;background:transparent;color:var(--cinza-medio);padding:4px;border-radius:6px;flex-shrink:0;">✎</button>
+            </div>
+            <div id="titulo-edit-container" style="display:none;align-items:center;gap:6px;">
+              <input type="text" id="input-titulo" style="font-size:19px;font-weight:700;color:var(--azul-profundo);border:1.5px solid var(--azul-inteligente);border-radius:8px;padding:4px 10px;font-family:inherit;">
+              <button onclick="salvarTitulo()" title="Salvar" style="background:#DCFCE7;color:#15803D;padding:5px 9px;border-radius:6px;font-weight:700;">✓</button>
+              <button onclick="cancelarEdicaoTitulo()" title="Cancelar" style="background:#FEE2E2;color:#B91C1C;padding:5px 9px;border-radius:6px;font-weight:700;">✕</button>
+            </div>
             <div class="sub">Estrutura fixa de 7 blocos — metodologia SIGESC</div>
           </div>
         </div>
@@ -225,6 +233,7 @@
       const data = await apiFetch(`/api/pesquisas/${pesquisaId}`);
       pesquisaAtual = data.pesquisa;
       document.getElementById('page-title').textContent = pesquisaAtual.titulo;
+      document.getElementById('btn-editar-titulo').style.display = 'inline-block';
       renderStepper();
       renderStepBody();
     }
@@ -489,6 +498,45 @@
     function copiarLink(link) {
       navigator.clipboard.writeText(link).then(() => mostrarMensagem('Link copiado!', 'success'));
     }
+
+    // ================= EDIÇÃO INLINE DO TÍTULO =================
+    // Diferente das perguntas, o título nunca teve relação com a trava de
+    // "perguntas travadas" — pode ser editado em qualquer status da pesquisa
+    // (rascunho, ativa, inativa, encerrada), inclusive depois de duplicada e
+    // já com resposta. O backend (PUT /api/pesquisas/:id) já suportava isso
+    // desde sempre — só faltava expor na tela (10/08/2026).
+    function iniciarEdicaoTitulo() {
+      document.getElementById('input-titulo').value = pesquisaAtual.titulo;
+      document.getElementById('titulo-container').style.display = 'none';
+      document.getElementById('titulo-edit-container').style.display = 'flex';
+      document.getElementById('input-titulo').focus();
+      document.getElementById('input-titulo').select();
+    }
+
+    function cancelarEdicaoTitulo() {
+      document.getElementById('titulo-edit-container').style.display = 'none';
+      document.getElementById('titulo-container').style.display = 'flex';
+    }
+
+    async function salvarTitulo() {
+      const novoTitulo = document.getElementById('input-titulo').value.trim();
+      if (!novoTitulo) { mostrarMensagem('O título não pode ficar em branco.', 'error'); return; }
+
+      try {
+        const { pesquisa } = await apiFetch(`/api/pesquisas/${pesquisaId}`, { method: 'PUT', body: JSON.stringify({ titulo: novoTitulo }) });
+        pesquisaAtual.titulo = pesquisa.titulo;
+        document.getElementById('page-title').textContent = pesquisa.titulo;
+        cancelarEdicaoTitulo();
+        mostrarMensagem('Título atualizado!', 'success');
+      } catch (err) {
+        mostrarMensagem('Erro ao salvar título: ' + err.message, 'error');
+      }
+    }
+
+    document.getElementById('input-titulo').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') salvarTitulo();
+      if (e.key === 'Escape') cancelarEdicaoTitulo();
+    });
 
     // O endpoint do QR Code exige login (mesma trava de todas as rotas de
     // pesquisa), e uma tag <img src="..."> não consegue mandar o cabeçalho
