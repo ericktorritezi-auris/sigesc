@@ -84,9 +84,12 @@ async function criarPesquisa(usuarioAutenticado, { titulo, empresaId, rotuloEnti
     throw new AppError('Empresa é obrigatória — toda pesquisa pertence a exatamente uma empresa.');
   }
 
-  const empresa = await query('SELECT id, politica_privacidade_padrao FROM empresas WHERE id = $1 AND gestor_id = $2', [empresaId, gestorId]);
+  const empresa = await query('SELECT id, ativa, politica_privacidade_padrao FROM empresas WHERE id = $1 AND gestor_id = $2', [empresaId, gestorId]);
   if (empresa.rows.length === 0) {
     throw new AppError('Empresa não encontrada na sua conta.', 404);
+  }
+  if (!empresa.rows[0].ativa) {
+    throw new AppError('Esta empresa está inativa — reative-a antes de criar uma pesquisa nova nela.', 409);
   }
   const politicaDaEmpresa = empresa.rows[0].politica_privacidade_padrao;
 
@@ -427,9 +430,12 @@ async function duplicarPesquisa(usuarioAutenticado, pesquisaId, { empresaId, mes
   const gestorId = gestorEfetivoId(usuarioAutenticado);
 
   const empresaDestino = empresaId || original.empresa_id;
-  const empresa = await query('SELECT id FROM empresas WHERE id = $1 AND gestor_id = $2', [empresaDestino, gestorId]);
+  const empresa = await query('SELECT id, ativa FROM empresas WHERE id = $1 AND gestor_id = $2', [empresaDestino, gestorId]);
   if (empresa.rows.length === 0) {
     throw new AppError('Empresa de destino não encontrada na sua conta.', 404);
+  }
+  if (!empresa.rows[0].ativa) {
+    throw new AppError('A empresa de destino está inativa — reative-a antes de duplicar a pesquisa pra ela.', 409);
   }
 
   const client = await pool.connect();

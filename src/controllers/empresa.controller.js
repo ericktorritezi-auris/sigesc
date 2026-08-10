@@ -43,4 +43,31 @@ async function postEmpresa(req, res, next) {
   }
 }
 
-module.exports = { getEmpresas, getEmpresaDetalhe, putEmpresa, postEmpresa };
+async function postInativar(req, res, next) {
+  try {
+    const empresa = await empresaService.inativarEmpresa(req.usuario, req.params.id);
+    res.status(200).json({ empresa });
+  } catch (err) {
+    tratarErro(err, res, next);
+  }
+}
+
+async function postReativar(req, res, next) {
+  try {
+    const empresa = await empresaService.reativarEmpresa(req.usuario, req.params.id);
+    res.status(200).json({ empresa });
+  } catch (err) {
+    tratarErro(err, res, next);
+  }
+}
+
+async function deleteEmpresa(req, res, next) {
+  try {
+    const resultado = await empresaService.excluirEmpresa(req.usuario, req.params.id);
+    res.status(200).json(resultado);
+  } catch (err) {
+    tratarErro(err, res, next);
+  }
+}
+
+module.exports = { getEmpresas, getEmpresaDetalhe, putEmpresa, postEmpresa, postInativar, postReativar, deleteEmpresa };

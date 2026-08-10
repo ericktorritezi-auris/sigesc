@@ -9,5 +9,8 @@ router.get('/', empresaController.getEmpresas);
 router.post('/', empresaController.postEmpresa);
 router.get('/:id', empresaController.getEmpresaDetalhe);
 router.put('/:id', empresaController.putEmpresa);
+router.post('/:id/inativar', empresaController.postInativar);
+router.post('/:id/reativar', empresaController.postReativar);
+router.delete('/:id', empresaController.deleteEmpresa);
 
 module.exports = router;
