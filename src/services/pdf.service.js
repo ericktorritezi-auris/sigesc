@@ -66,15 +66,18 @@ function marcaSigesc(doc, escuro) {
     .text('SIGESC', 60, 27);
 }
 
-function rodape(doc, versao, escuro) {
+function rodape(doc, versao, escuro, configRodape) {
   const ano = new Date().getFullYear();
   const cor = escuro ? '#8FA0B8' : CORES.cinzaMedio;
+  const habilitado = !configRodape || configRodape.rodapeHabilitado !== false;
+  const textoEsquerda = habilitado ? `SIGESC v${versao} · Desenvolvido por Belle Planner` : (configRodape.rodapeTexto || '');
+  const textoDireita = habilitado ? `© ${ano} Belle Planner. Todos os direitos reservados.` : '';
   doc
     .font('Helvetica')
     .fontSize(8.5)
     .fillColor(cor)
-    .text(`SIGESC v${versao} · Desenvolvido por Belle Planner`, 40, ALTURA - 30)
-    .text(`© ${ano} Belle Planner. Todos os direitos reservados.`, LARGURA - 300, ALTURA - 30, { width: 260, align: 'right' });
+    .text(textoEsquerda, 40, ALTURA - 30)
+    .text(textoDireita, LARGURA - 300, ALTURA - 30, { width: 260, align: 'right' });
   doc.lineWidth(0.5);
   if (escuro) { doc.strokeOpacity(0.15); doc.moveTo(40, ALTURA - 40).lineTo(LARGURA - 40, ALTURA - 40).stroke(CORES.branco); doc.strokeOpacity(1); }
   else { doc.moveTo(40, ALTURA - 40).lineTo(LARGURA - 40, ALTURA - 40).stroke('#E2E8F0'); }
@@ -93,7 +96,7 @@ function badge(doc, x, y, texto, cor, opacidade) {
  * Gera o relatório executivo em PDF, populado com os dados reais do ciclo.
  * Retorna um Buffer — quem chama decide se salva em arquivo ou serve via HTTP.
  */
-function gerarRelatorioPDF({ cicloTitulo, organizacaoNome, gestorNome, versao, dashboard }) {
+function gerarRelatorioPDF({ cicloTitulo, organizacaoNome, gestorNome, versao, dashboard, configRodape }) {
   return new Promise((resolve, reject) => {
     const doc = new PDFDocument({ size: [LARGURA, ALTURA], margin: 0 });
     const chunks = [];
@@ -142,7 +145,7 @@ function gerarRelatorioPDF({ cicloTitulo, organizacaoNome, gestorNome, versao, d
       doc.font('Helvetica').fontSize(10).fillColor('#8FA0B8').text(label, x, 328);
     });
 
-    rodape(doc, versao, true);
+    rodape(doc, versao, true, configRodape);
 
     if (!kpis) {
       // Ciclo sem nenhum dado ainda — encerra o PDF só com a capa avisando isso.
@@ -183,7 +186,7 @@ function gerarRelatorioPDF({ cicloTitulo, organizacaoNome, gestorNome, versao, d
       badge(doc, x + 16, y + 76, labelFaixa(valor), corFaixa(valor));
     });
 
-    rodape(doc, versao, true);
+    rodape(doc, versao, true, configRodape);
 
     // ========== PÁGINA 3 — RANKING ==========
     doc.addPage({ size: [LARGURA, ALTURA], margin: 0 });
@@ -212,7 +215,7 @@ function gerarRelatorioPDF({ cicloTitulo, organizacaoNome, gestorNome, versao, d
       doc.font('Helvetica-Bold').fontSize(13).fillColor(cor).text(Number(r.score_geral).toFixed(1).replace('.', ','), 815, y + 3);
     });
 
-    rodape(doc, versao, true);
+    rodape(doc, versao, true, configRodape);
 
     // ========== PÁGINA 4 — EVOLUÇÃO MENSAL ==========
     doc.addPage({ size: [LARGURA, ALTURA], margin: 0 });
@@ -254,7 +257,7 @@ function gerarRelatorioPDF({ cicloTitulo, organizacaoNome, gestorNome, versao, d
       doc.font('Helvetica').fontSize(12).fillColor('#C9D3E0').text('Sem histórico mensal suficiente ainda.', 40, 200);
     }
 
-    rodape(doc, versao, true);
+    rodape(doc, versao, true, configRodape);
 
     // ========== PÁGINA 5 — PERFIL + DISTRIBUIÇÃO ==========
     doc.addPage({ size: [LARGURA, ALTURA], margin: 0 });
@@ -301,7 +304,7 @@ function gerarRelatorioPDF({ cicloTitulo, organizacaoNome, gestorNome, versao, d
       doc.font('Helvetica-Bold').fontSize(10.5).fillColor(CORES.azulProfundo).text(`${distr[chave] || 0}`, 850, y, { width: 40, align: 'right' });
     });
 
-    rodape(doc, versao, false);
+    rodape(doc, versao, false, configRodape);
 
     // ========== PÁGINA 6 — DIAGNÓSTICO POR DIMENSÃO ==========
     doc.addPage({ size: [LARGURA, ALTURA], margin: 0 });
@@ -348,7 +351,7 @@ function gerarRelatorioPDF({ cicloTitulo, organizacaoNome, gestorNome, versao, d
       });
     });
 
-    rodape(doc, versao, false);
+    rodape(doc, versao, false, configRodape);
 
     // ========== PÁGINA 7 — EVOLUÇÃO COMPARADA DAS 4 DIMENSÕES ==========
     doc.addPage({ size: [LARGURA, ALTURA], margin: 0 });
@@ -403,7 +406,7 @@ function gerarRelatorioPDF({ cicloTitulo, organizacaoNome, gestorNome, versao, d
       doc.font('Helvetica').fontSize(12).fillColor('#C9D3E0').text('Sem histórico mensal suficiente ainda.', 40, 200);
     }
 
-    rodape(doc, versao, true);
+    rodape(doc, versao, true, configRodape);
 
     // ========== PÁGINA 8 — RECOMENDAÇÕES ==========
     doc.addPage({ size: [LARGURA, ALTURA], margin: 0 });
@@ -422,7 +425,7 @@ function gerarRelatorioPDF({ cicloTitulo, organizacaoNome, gestorNome, versao, d
       doc.font('Helvetica').fontSize(10.5).fillColor('#C9D3E0').text(rec.descricao, 82, y + 20, { width: 780 });
     });
 
-    rodape(doc, versao, true);
+    rodape(doc, versao, true, configRodape);
 
     doc.end();
   });
@@ -486,7 +489,7 @@ function gerarRecomendacoes(dashboard) {
  * Análises mostra pra UM cliente específico — usado pelo botão "Gerar PDF"
  * daquela tela (só disponível na web, não no mobile).
  */
-function gerarPdfAnaliseCliente({ cliente, kpis, historico, totalRespostas, ultimaResposta, mediaCarteira, versao }) {
+function gerarPdfAnaliseCliente({ cliente, kpis, historico, totalRespostas, ultimaResposta, mediaCarteira, versao, configRodape }) {
   return new Promise((resolve, reject) => {
     const doc = new PDFDocument({ size: [LARGURA, ALTURA], margin: 0 });
     const chunks = [];
@@ -503,7 +506,7 @@ function gerarPdfAnaliseCliente({ cliente, kpis, historico, totalRespostas, ulti
 
     if (!kpis) {
       doc.font('Helvetica').fontSize(13).fillColor('#C9D3E0').text('Este cliente ainda não tem indicadores calculados.', 40, 180);
-      rodape(doc, versao, true);
+      rodape(doc, versao, true, configRodape);
       doc.end();
       return;
     }
@@ -572,7 +575,7 @@ function gerarPdfAnaliseCliente({ cliente, kpis, historico, totalRespostas, ulti
     doc.font('Helvetica').fontSize(10.5).fillColor('#C9D3E0').text(`Total de respostas recebidas: ${totalRespostas}`, colX, 478);
     doc.text(`Última resposta: ${ultimaResposta ? new Date(ultimaResposta).toLocaleDateString('pt-BR') : '—'}`, colX, 494);
 
-    rodape(doc, versao, true);
+    rodape(doc, versao, true, configRodape);
     doc.end();
   });
 }
@@ -581,7 +584,7 @@ function gerarPdfAnaliseCliente({ cliente, kpis, historico, totalRespostas, ulti
  * PDF focado — Análise por Dimensão. Mesma ideia: "imprime" exatamente o
  * que a tela mostra pra UMA dimensão específica (ex: só Tecnologia).
  */
-function gerarPdfAnaliseDimensao({ dimensao, label, sigla, media, ranking, evolucaoMensal, versao }) {
+function gerarPdfAnaliseDimensao({ dimensao, label, sigla, media, ranking, evolucaoMensal, versao, configRodape }) {
   return new Promise((resolve, reject) => {
     const doc = new PDFDocument({ size: [LARGURA, ALTURA], margin: 0 });
     const chunks = [];
@@ -597,7 +600,7 @@ function gerarPdfAnaliseDimensao({ dimensao, label, sigla, media, ranking, evolu
 
     if (media === null) {
       doc.font('Helvetica').fontSize(13).fillColor('#C9D3E0').text('Nenhum dado calculado ainda pra essa dimensão.', 40, 150);
-      rodape(doc, versao, true);
+      rodape(doc, versao, true, configRodape);
       doc.end();
       return;
     }
@@ -649,7 +652,7 @@ function gerarPdfAnaliseDimensao({ dimensao, label, sigla, media, ranking, evolu
       doc.font('Helvetica-Bold').fontSize(11).fillColor(cor).text(Number(r.valor).toFixed(1).replace('.', ','), xBase + 400, y + 5);
     });
 
-    rodape(doc, versao, true);
+    rodape(doc, versao, true, configRodape);
     doc.end();
   });
 }

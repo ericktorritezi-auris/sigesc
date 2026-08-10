@@ -1,7 +1,8 @@
 const adminService = require('../services/admin.service');
+const configuracaoSistemaService = require('../services/configuracao-sistema.service');
 
 function tratarErro(err, res, next) {
-  if (err instanceof adminService.AppError) {
+  if (err instanceof adminService.AppError || err instanceof configuracaoSistemaService.AppError) {
     return res.status(err.status).json({ erro: err.message });
   }
   return next(err);
@@ -55,4 +56,22 @@ async function postReset(req, res, next) {
   }
 }
 
-module.exports = { getGestores, postGestor, putGestor, getBackup, postReset };
+async function getConfiguracaoRodape(req, res, next) {
+  try {
+    const configuracao = await configuracaoSistemaService.buscarConfiguracaoRodape();
+    res.status(200).json({ configuracao });
+  } catch (err) {
+    tratarErro(err, res, next);
+  }
+}
+
+async function putConfiguracaoRodape(req, res, next) {
+  try {
+    const configuracao = await configuracaoSistemaService.atualizarConfiguracaoRodape(req.body);
+    res.status(200).json({ configuracao });
+  } catch (err) {
+    tratarErro(err, res, next);
+  }
+}
+
+module.exports = { getGestores, postGestor, putGestor, getBackup, postReset, getConfiguracaoRodape, putConfiguracaoRodape };

@@ -2,6 +2,7 @@ const { query } = require('../config/db');
 const { gestorEfetivoId } = require('./empresa.service');
 const calculoService = require('./calculo.service');
 const { gerarRelatorioPDF } = require('./pdf.service');
+const { buscarConfiguracaoRodape } = require('./configuracao-sistema.service');
 
 class AppError extends Error {
   constructor(message, status = 400) {
@@ -75,6 +76,7 @@ async function gerarRelatorioPdf(usuarioAutenticado, cicloId) {
     [gestorId]
   );
   const { gestor_nome: gestorNome, organizacao_nome: organizacaoNome } = rows[0] || {};
+  const configRodape = await buscarConfiguracaoRodape();
 
   const buffer = await gerarRelatorioPDF({
     cicloTitulo: ciclo.titulo,
@@ -82,6 +84,7 @@ async function gerarRelatorioPdf(usuarioAutenticado, cicloId) {
     gestorNome: gestorNome || '—',
     versao: process.env.APP_VERSION || '1.0',
     dashboard,
+    configRodape,
   });
 
   return { buffer, nomeArquivo: `sigesc-relatorio-${ciclo.titulo.toLowerCase().replace(/[^a-z0-9]+/g, '-')}.pdf` };
