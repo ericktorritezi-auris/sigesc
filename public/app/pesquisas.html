@@ -208,8 +208,9 @@
     async function duplicarPesquisa(pesquisaId) {
       try {
         const { empresas } = await apiFetch('/api/empresas');
+        const ativas = empresas.filter(e => e.ativa); // não pode duplicar pra empresa inativa
         document.getElementById('dup-pesquisa-id').value = pesquisaId;
-        document.getElementById('dup-empresa').innerHTML = empresas.map(e => `<option value="${e.id}">${e.nome}</option>`).join('');
+        document.getElementById('dup-empresa').innerHTML = ativas.map(e => `<option value="${e.id}">${e.nome}</option>`).join('');
         document.getElementById('dup-mesmo-ciclo').checked = true;
         document.getElementById('modal-duplicar').classList.add('active');
       } catch (err) {

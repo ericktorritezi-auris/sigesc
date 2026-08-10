@@ -178,9 +178,10 @@
     // ================= ETAPA INICIAL (sem pesquisa ainda) =================
     async function carregarFormInicial() {
       const data = await apiFetch('/api/empresas');
+      const ativas = data.empresas.filter(e => e.ativa); // empresa inativa não deve receber pesquisa nova
       const select = document.getElementById('select-empresa');
-      select.innerHTML = data.empresas.map(e => `<option value="${e.id}">${e.nome}</option>`).join('');
-      if (data.empresas.length === 0) {
+      select.innerHTML = ativas.map(e => `<option value="${e.id}">${e.nome}</option>`).join('');
+      if (ativas.length === 0) {
         document.getElementById('campo-nova-empresa').style.display = 'block';
         document.getElementById('btn-toggle-nova-empresa').style.display = 'none';
       }

@@ -242,6 +242,16 @@ node tests/test_v12_pdf_qrcode.js
 
 # Teste do Sprint 13 / v1.4 (rodapé white-label controlado pelo Administrador)
 node tests/test_rodape_whitelabel.js
+
+# Teste do Sprint 14 / v1.5 (excluir/inativar Empresa)
+node tests/test_excluir_empresa.js
+
+# IMPORTANTE: se for rodar vários testes em sequência numa sessão só, alguns
+# dependem de rodar DEPOIS de test_sprint4_motor_calculo.js (que gera dados
+# conhecidos usados por outros testes). E evite encadear dezenas de scripts
+# de teste seguidos sem pausa — cada um faz login, e o limitador de
+# tentativas de login (rate limit, de propósito, ver Sprint 6) pode disparar
+# de verdade se acumular tentativas demais numa janela de tempo curta.
 ```
 
 Ambos assumem que o servidor já está rodando e que o seed do gestor inicial já foi executado.
