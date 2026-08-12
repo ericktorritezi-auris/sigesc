@@ -657,4 +657,98 @@ function gerarPdfAnaliseDimensao({ dimensao, label, sigla, media, ranking, evolu
   });
 }
 
-module.exports = { gerarRelatorioPDF, gerarPdfAnaliseCliente, gerarPdfAnaliseDimensao };
+/**
+ * PDF focado — Análise por Respostas. "Imprime" exatamente o que a tela
+ * mostra: volume por cliente, top 5 maiores/menores (Score Geral e ISV) e
+ * sentimento consolidado. Reaproveita as mesmas funções de cor/rodapé.
+ */
+function gerarPdfAnaliseRespostas({ volumePorCliente, topScoreMaiores, topScoreMenores, topIsvMaiores, topIsvMenores, sentimento, versao, configRodape }) {
+  return new Promise((resolve, reject) => {
+    const doc = new PDFDocument({ size: [LARGURA, ALTURA], margin: 0 });
+    const chunks = [];
+    doc.on('data', (chunk) => chunks.push(chunk));
+    doc.on('end', () => resolve(Buffer.concat(chunks)));
+    doc.on('error', reject);
+
+    // ===== PÁGINA 1 — VOLUME POR CLIENTE =====
+    fundoEscuro(doc);
+    marcaSigesc(doc, true);
+    doc.font('Helvetica-Bold').fontSize(11).fillColor(CORES.verdeAgua).text('ANÁLISE POR RESPOSTAS', 40, 70);
+    doc.font('Helvetica-Bold').fontSize(24).fillColor(CORES.branco).text('Volume de respostas por cliente', 40, 96);
+
+    const maxVol = Math.max(...volumePorCliente.map((v) => v.total), 1);
+    volumePorCliente.slice(0, 12).forEach((v, i) => {
+      const y = 150 + i * 28;
+      if (y > 490) return;
+      doc.font('Helvetica').fontSize(10).fillColor(CORES.branco).text(v.nomeCliente, 40, y, { width: 260 });
+      const trackW = 480;
+      doc.fillOpacity(0.1); doc.roundedRect(320, y + 2, trackW, 10, 5).fill(CORES.branco); doc.fillOpacity(1);
+      doc.roundedRect(320, y + 2, Math.max(4, (v.total / maxVol) * trackW), 10, 5).fill(CORES.verdeAgua);
+      doc.font('Helvetica-Bold').fontSize(10).fillColor(CORES.verdeAgua).text(String(v.total), 810, y);
+    });
+    rodape(doc, versao, true, configRodape);
+
+    // ===== PÁGINA 2 — TOP 5 SCORE GERAL =====
+    doc.addPage({ size: [LARGURA, ALTURA], margin: 0 });
+    fundoClaro(doc);
+    marcaSigesc(doc, false);
+    doc.font('Helvetica-Bold').fontSize(11).fillColor(CORES.azulInteligente).text('SCORE GERAL DA RESPOSTA', 40, 70);
+    doc.font('Helvetica-Bold').fontSize(22).fillColor(CORES.azulProfundo).text('Quem mais e quem menos agregou valor', 40, 96);
+    desenharDuasColunasTop(doc, topScoreMaiores, topScoreMenores, 'Score');
+    rodape(doc, versao, false, configRodape);
+
+    // ===== PÁGINA 3 — TOP 5 VALOR PERCEBIDO (ISV) =====
+    doc.addPage({ size: [LARGURA, ALTURA], margin: 0 });
+    fundoClaro(doc);
+    marcaSigesc(doc, false);
+    doc.font('Helvetica-Bold').fontSize(11).fillColor(CORES.azulInteligente).text('VALOR PERCEBIDO (ISV) DA RESPOSTA', 40, 70);
+    doc.font('Helvetica-Bold').fontSize(22).fillColor(CORES.azulProfundo).text('Quem mais e quem menos sentiu valor', 40, 96);
+    desenharDuasColunasTop(doc, topIsvMaiores, topIsvMenores, 'ISV');
+    rodape(doc, versao, false, configRodape);
+
+    // ===== PÁGINA 4 — SENTIMENTO CONSOLIDADO =====
+    doc.addPage({ size: [LARGURA, ALTURA], margin: 0 });
+    fundoEscuro(doc);
+    marcaSigesc(doc, true);
+    doc.font('Helvetica-Bold').fontSize(11).fillColor(CORES.verdeAgua).text('SENTIMENTO DE IA · TODA A CARTEIRA', 40, 70);
+    doc.font('Helvetica-Bold').fontSize(24).fillColor(CORES.branco).text('O que os comentários abertos revelam', 40, 96);
+
+    if (sentimento.total === 0) {
+      doc.font('Helvetica').fontSize(13).fillColor('#C9D3E0').text('Nenhuma resposta aberta foi analisada por IA ainda.', 40, 160);
+    } else {
+      const itens = [
+        ['Positivo', sentimento.consolidado.positivo, CORES.verdeSucesso],
+        ['Neutro', sentimento.consolidado.neutro, '#94A3B8'],
+        ['Negativo', sentimento.consolidado.negativo, CORES.vermelhoCritico],
+      ];
+      itens.forEach(([label, qtd, cor], i) => {
+        const pct = ((qtd / sentimento.total) * 100).toFixed(0);
+        const x = 40 + i * 300;
+        doc.fillOpacity(0.06); doc.roundedRect(x, 160, 260, 130, 12).fill(CORES.branco); doc.fillOpacity(1);
+        doc.font('Helvetica-Bold').fontSize(34).fillColor(cor).text(`${pct}%`, x + 20, 185);
+        doc.font('Helvetica').fontSize(11).fillColor('#B9C4D6').text(label, x + 20, 235);
+        doc.font('Helvetica').fontSize(9).fillColor('#8FA0B8').text(`${qtd} de ${sentimento.total} respostas`, x + 20, 254);
+      });
+    }
+    rodape(doc, versao, true, configRodape);
+
+    doc.end();
+  });
+}
+
+/** Desenha as 2 colunas (maiores à esquerda, menores à direita) de um top 5 de respostas. */
+function desenharDuasColunasTop(doc, maiores, menores, rotuloValor) {
+  [['Maiores', maiores, 40, CORES.verdeSucesso], ['Menores', menores, 490, CORES.vermelhoCritico]].forEach(([titulo, lista, xBase, cor]) => {
+    doc.font('Helvetica-Bold').fontSize(13).fillColor(CORES.azulProfundo).text(`${titulo} ${rotuloValor}`, xBase, 140);
+    lista.forEach((r, i) => {
+      const y = 175 + i * 62;
+      doc.circle(xBase + 12, y + 10, 10).fill(corFaixa(r.valor));
+      doc.font('Helvetica-Bold').fontSize(9).fillColor(CORES.branco).text(String(i + 1), xBase + 8, y + 6);
+      doc.font('Helvetica-Bold').fontSize(11).fillColor(CORES.azulProfundo).text(r.nomeCompleto, xBase + 32, y, { width: 350 });
+      doc.font('Helvetica').fontSize(9).fillColor(CORES.cinzaMedio).text(`${r.cargo} · ${r.nomeCliente}`, xBase + 32, y + 15, { width: 350 });
+      doc.font('Helvetica-Bold').fontSize(16).fillColor(corFaixa(r.valor)).text(Number(r.valor).toFixed(1).replace('.', ','), xBase + 32, y + 32);
+    });
+  });
+}
+
+module.exports = { gerarRelatorioPDF, gerarPdfAnaliseCliente, gerarPdfAnaliseDimensao, gerarPdfAnaliseRespostas };

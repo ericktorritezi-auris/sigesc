@@ -132,4 +132,114 @@ async function buscarRelatorioDimensao(usuarioAutenticado, dimensao) {
   };
 }
 
-module.exports = { listarClientesParaRelatorio, buscarRelatorioCliente, buscarRelatorioDimensao, AppError };
+const METRICAS_RESPOSTA_VALIDAS = ['score_geral', 'isv'];
+
+/**
+ * Análise por Respostas — visão nova (07/08/2026, pedido de Erick): olha
+ * pra RESPOSTA INDIVIDUAL, não pro cliente agregado. Junta tudo que a tela
+ * precisa numa chamada só (mesmo padrão do dashboard de Ciclo).
+ */
+async function buscarAnaliseRespostas(usuarioAutenticado) {
+  const gestorId = gestorEfetivoId(usuarioAutenticado);
+
+  const [volumePorCliente, topScoreMaiores, topScoreMenores, topIsvMaiores, topIsvMenores, sentimento, volumeXValor] = await Promise.all([
+    buscarVolumeRespostasPorCliente(gestorId),
+    buscarTopRespostas(gestorId, 'score_geral', 'DESC'),
+    buscarTopRespostas(gestorId, 'score_geral', 'ASC'),
+    buscarTopRespostas(gestorId, 'isv', 'DESC'),
+    buscarTopRespostas(gestorId, 'isv', 'ASC'),
+    buscarSentimentoConsolidado(gestorId),
+    buscarVolumeXValor(gestorId),
+  ]);
+
+  return { volumePorCliente, topScoreMaiores, topScoreMenores, topIsvMaiores, topIsvMenores, sentimento, volumeXValor };
+}
+
+async function buscarVolumeRespostasPorCliente(gestorId) {
+  const { rows } = await query(
+    `SELECT pc.nome_cliente, e.nome AS empresa_nome, COUNT(r.id) AS total
+     FROM pesquisa_clientes pc
+     JOIN pesquisas p ON p.id = pc.pesquisa_id
+     JOIN empresas e ON e.id = p.empresa_id
+     JOIN respostas r ON r.pesquisa_cliente_id = pc.id AND r.concluida = true
+     WHERE p.gestor_id = $1
+     GROUP BY pc.id, pc.nome_cliente, e.nome
+     ORDER BY total DESC`,
+    [gestorId]
+  );
+  return rows.map((r) => ({ nomeCliente: r.nome_cliente, empresaNome: r.empresa_nome, total: parseInt(r.total, 10) }));
+}
+
+/** Top 5 respostas INDIVIDUAIS (não agregadas por cliente) por uma métrica específica. */
+async function buscarTopRespostas(gestorId, metrica, direcao) {
+  if (!METRICAS_RESPOSTA_VALIDAS.includes(metrica)) {
+    throw new AppError('Métrica inválida. Use score_geral ou isv.');
+  }
+  const direcaoSql = direcao === 'ASC' ? 'ASC' : 'DESC';
+
+  const { rows } = await query(
+    `SELECT r.nome_completo, r.cargo, pc.nome_cliente, e.nome AS empresa_nome, sc.${metrica} AS valor
+     FROM respostas r
+     JOIN scores_calculados sc ON sc.resposta_id = r.id
+     JOIN pesquisa_clientes pc ON pc.id = r.pesquisa_cliente_id
+     JOIN pesquisas p ON p.id = r.pesquisa_id
+     JOIN empresas e ON e.id = p.empresa_id
+     WHERE p.gestor_id = $1 AND r.concluida = true AND sc.${metrica} IS NOT NULL
+     ORDER BY sc.${metrica} ${direcaoSql}
+     LIMIT 5`,
+    [gestorId]
+  );
+  return rows.map((r) => ({
+    nomeCompleto: r.nome_completo,
+    cargo: r.cargo,
+    nomeCliente: r.nome_cliente,
+    empresaNome: r.empresa_nome,
+    valor: Number(r.valor),
+  }));
+}
+
+/** Consolidado de sentimento de IA — só conta o que já foi analisado (sentimento_ia preenchido). */
+async function buscarSentimentoConsolidado(gestorId) {
+  const { rows } = await query(
+    `SELECT ri.sentimento_ia, COUNT(*) AS total
+     FROM respostas_itens ri
+     JOIN respostas r ON r.id = ri.resposta_id
+     JOIN pesquisas p ON p.id = r.pesquisa_id
+     WHERE p.gestor_id = $1 AND ri.sentimento_ia IS NOT NULL
+     GROUP BY ri.sentimento_ia`,
+    [gestorId]
+  );
+  const consolidado = { positivo: 0, neutro: 0, negativo: 0 };
+  let total = 0;
+  rows.forEach((r) => {
+    if (consolidado[r.sentimento_ia] !== undefined) {
+      consolidado[r.sentimento_ia] = parseInt(r.total, 10);
+      total += parseInt(r.total, 10);
+    }
+  });
+  return { total, consolidado };
+}
+
+/** Volume de respostas x score médio, por cliente — pra visualizar correlação. */
+async function buscarVolumeXValor(gestorId) {
+  const { rows } = await query(
+    `SELECT pc.nome_cliente, COUNT(r.id) AS total, AVG(sc.score_geral)::numeric(4,2) AS media
+     FROM pesquisa_clientes pc
+     JOIN pesquisas p ON p.id = pc.pesquisa_id
+     JOIN respostas r ON r.pesquisa_cliente_id = pc.id AND r.concluida = true
+     JOIN scores_calculados sc ON sc.resposta_id = r.id
+     WHERE p.gestor_id = $1
+     GROUP BY pc.id, pc.nome_cliente
+     ORDER BY total DESC`,
+    [gestorId]
+  );
+  return rows.map((r) => ({ nomeCliente: r.nome_cliente, total: parseInt(r.total, 10), media: Number(r.media) }));
+}
+
+module.exports = {
+  listarClientesParaRelatorio,
+  buscarRelatorioCliente,
+  buscarRelatorioDimensao,
+  buscarAnaliseRespostas,
+  AppError,
+};

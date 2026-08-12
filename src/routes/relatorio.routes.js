@@ -11,5 +11,7 @@ router.get('/clientes/:clienteId', relatorioController.getRelatorioCliente);
 router.get('/clientes/:clienteId/pdf', relatorioController.getPdfCliente);
 router.get('/dimensoes/:dimensao', relatorioController.getRelatorioDimensao);
 router.get('/dimensoes/:dimensao/pdf', relatorioController.getPdfDimensao);
+router.get('/respostas', relatorioController.getAnaliseRespostas);
+router.get('/respostas/pdf', relatorioController.getPdfRespostas);
 
 module.exports = router;

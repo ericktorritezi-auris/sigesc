@@ -1,5 +1,5 @@
 const relatorioService = require('../services/relatorio.service');
-const { gerarPdfAnaliseCliente, gerarPdfAnaliseDimensao } = require('../services/pdf.service');
+const { gerarPdfAnaliseCliente, gerarPdfAnaliseDimensao, gerarPdfAnaliseRespostas } = require('../services/pdf.service');
 const { buscarConfiguracaoRodape } = require('../services/configuracao-sistema.service');
 
 const DIMENSOES_INFO = {
@@ -73,4 +73,26 @@ async function getPdfDimensao(req, res, next) {
   }
 }
 
-module.exports = { getClientes, getRelatorioCliente, getRelatorioDimensao, getPdfCliente, getPdfDimensao };
+async function getAnaliseRespostas(req, res, next) {
+  try {
+    const analise = await relatorioService.buscarAnaliseRespostas(req.usuario);
+    res.status(200).json(analise);
+  } catch (err) {
+    tratarErro(err, res, next);
+  }
+}
+
+async function getPdfRespostas(req, res, next) {
+  try {
+    const dados = await relatorioService.buscarAnaliseRespostas(req.usuario);
+    const configRodape = await buscarConfiguracaoRodape();
+    const buffer = await gerarPdfAnaliseRespostas({ ...dados, versao: process.env.APP_VERSION || '1.2', configRodape });
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="analise-respostas.pdf"`);
+    res.status(200).send(buffer);
+  } catch (err) {
+    tratarErro(err, res, next);
+  }
+}
+
+module.exports = { getClientes, getRelatorioCliente, getRelatorioDimensao, getPdfCliente, getPdfDimensao, getAnaliseRespostas, getPdfRespostas };
