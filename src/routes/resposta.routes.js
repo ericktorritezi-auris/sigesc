@@ -7,6 +7,7 @@ const router = express.Router();
 router.use(autenticar, bloquearAdministrador);
 
 router.get('/', respostaController.getRespostas);
+router.get('/exportar', respostaController.getExportarRespostas);
 router.get('/:id', respostaController.getRespostaDetalhe);
 router.post('/:id/perguntas/:perguntaId/analisar-sentimento', respostaController.postAnalisarSentimento);
 router.post('/:id/plano-acao', respostaController.postPlanoAcao);

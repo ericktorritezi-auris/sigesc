@@ -53,4 +53,15 @@ async function postPlanoAcao(req, res, next) {
   }
 }
 
-module.exports = { getRespostas, getRespostaDetalhe, postAnalisarSentimento, postPlanoAcao };
+module.exports = { getRespostas, getRespostaDetalhe, postAnalisarSentimento, postPlanoAcao, getExportarRespostas };
+
+async function getExportarRespostas(req, res, next) {
+  try {
+    const { buffer } = await respostaService.exportarRespostasDetalhadas(req.usuario);
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', 'attachment; filename="sigesc-respostas-detalhadas.xlsx"');
+    res.status(200).send(buffer);
+  } catch (err) {
+    tratarErro(err, res, next);
+  }
+}

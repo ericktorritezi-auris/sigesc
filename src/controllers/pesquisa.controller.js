@@ -128,6 +128,17 @@ async function getQrCode(req, res, next) {
   }
 }
 
+async function getExportarRespondentes(req, res, next) {
+  try {
+    const { buffer } = await pesquisaService.exportarRespondentesUnicos(req.usuario);
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', 'attachment; filename="sigesc-leads-respondentes.xlsx"');
+    res.status(200).send(buffer);
+  } catch (err) {
+    tratarErro(err, res, next);
+  }
+}
+
 async function postDuplicar(req, res, next) {
   try {
     const pesquisa = await pesquisaService.duplicarPesquisa(req.usuario, req.params.id, req.body);
@@ -171,6 +182,7 @@ module.exports = {
   postInativar,
   deletePesquisa,
   getQrCode,
+  getExportarRespondentes,
   postDuplicar,
   getEvolucaoCiclo,
   getRankingCiclo,

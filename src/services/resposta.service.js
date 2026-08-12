@@ -1,6 +1,7 @@
 const { query } = require('../config/db');
 const { gestorEfetivoId } = require('./empresa.service');
 const iaService = require('./ia.service');
+const ExcelJS = require('exceljs');
 
 class AppError extends Error {
   constructor(message, status = 400) {
@@ -141,4 +142,89 @@ async function gerarPlanoAcaoResposta(usuarioAutenticado, respostaId) {
   return { plano };
 }
 
-module.exports = { listarRespostas, buscarDetalheResposta, analisarSentimentoItem, gerarPlanoAcaoResposta, AppError };
+module.exports = { listarRespostas, buscarDetalheResposta, analisarSentimentoItem, gerarPlanoAcaoResposta, exportarRespostasDetalhadas, AppError };
+
+/**
+ * Exporta TODAS as respostas recebidas (não deduplicado — cada resposta
+ * conta 1 vez, mesmo que a pessoa tenha respondido mais de uma pesquisa).
+ * Junta as respostas abertas de cada bloco fixo por posição estrutural
+ * (bloco + tipo da pergunta), já que cada um desses 4 blocos tem exatamente
+ * 1 pergunta aberta (garantido pela metodologia fixa do sistema — ver
+ * metodologia.js). Pedido de Erick em 12/08/2026.
+ */
+async function exportarRespostasDetalhadas(usuarioAutenticado) {
+  const gestorId = gestorEfetivoId(usuarioAutenticado);
+
+  function subAbertaBloco(tipoBloco, apelido) {
+    return `LEFT JOIN LATERAL (
+      SELECT ri.valor_texto
+      FROM respostas_itens ri
+      JOIN pesquisa_perguntas pp ON pp.id = ri.pergunta_id
+      JOIN pesquisa_blocos pb ON pb.id = pp.bloco_id
+      WHERE ri.resposta_id = r.id AND pb.tipo_bloco = '${tipoBloco}' AND pp.tipo = 'texto_livre'
+      LIMIT 1
+    ) ${apelido} ON true`;
+  }
+
+  const { rows } = await query(
+    `SELECT
+       pc.nome_cliente AS municipio,
+       r.respondido_em,
+       perfil_sub.valor_texto AS perfil,
+       atend_sub.valor_texto AS atendimento,
+       infra_sub.valor_texto AS infraestrutura,
+       tec_sub.valor_texto AS tecnologia,
+       coment_sub.valor_texto AS comentario_final
+     FROM respostas r
+     JOIN pesquisas p ON p.id = r.pesquisa_id
+     JOIN pesquisa_clientes pc ON pc.id = r.pesquisa_cliente_id
+     LEFT JOIN LATERAL (
+       SELECT ri.valor_texto
+       FROM respostas_itens ri
+       JOIN pesquisa_perguntas pp ON pp.id = ri.pergunta_id
+       JOIN pesquisa_blocos pb ON pb.id = pp.bloco_id
+       WHERE ri.resposta_id = r.id AND pb.tipo_bloco = 'identificacao' AND pp.tipo = 'multipla_escolha'
+       LIMIT 1
+     ) perfil_sub ON true
+     ${subAbertaBloco('atendimento', 'atend_sub')}
+     ${subAbertaBloco('infraestrutura', 'infra_sub')}
+     ${subAbertaBloco('tecnologia', 'tec_sub')}
+     ${subAbertaBloco('comentarios', 'coment_sub')}
+     WHERE p.gestor_id = $1 AND r.concluida = true
+     ORDER BY r.respondido_em DESC`,
+    [gestorId]
+  );
+
+  const workbook = new ExcelJS.Workbook();
+  workbook.creator = 'SIGESC';
+  workbook.created = new Date();
+
+  const planilha = workbook.addWorksheet('Respostas');
+  planilha.columns = [
+    { header: 'Município', key: 'municipio', width: 28 },
+    { header: 'Data da Resposta', key: 'data', width: 18 },
+    { header: 'Perfil', key: 'perfil', width: 22 },
+    { header: 'Atendimento', key: 'atendimento', width: 45 },
+    { header: 'Infraestrutura', key: 'infraestrutura', width: 45 },
+    { header: 'Tecnologia', key: 'tecnologia', width: 45 },
+    { header: 'Comentário Final', key: 'comentario_final', width: 45 },
+  ];
+  planilha.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
+  planilha.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0D1B2A' } };
+
+  rows.forEach((r) => {
+    planilha.addRow({
+      municipio: r.municipio,
+      data: new Date(r.respondido_em).toLocaleDateString('pt-BR'),
+      perfil: r.perfil || '—',
+      atendimento: r.atendimento || '',
+      infraestrutura: r.infraestrutura || '',
+      tecnologia: r.tecnologia || '',
+      comentario_final: r.comentario_final || '',
+    });
+  });
+  planilha.eachRow((row) => { row.alignment = { vertical: 'top', wrapText: true }; });
+
+  const buffer = await workbook.xlsx.writeBuffer();
+  return { buffer, total: rows.length };
+}

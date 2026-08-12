@@ -8,6 +8,7 @@ router.use(autenticar, bloquearAdministrador);
 
 router.post('/', pesquisaController.postPesquisa);
 router.get('/', pesquisaController.getPesquisas);
+router.get('/exportar-respondentes', pesquisaController.getExportarRespondentes);
 router.get('/:id', pesquisaController.getPesquisaDetalhe);
 router.put('/:id', pesquisaController.putPesquisa);
 

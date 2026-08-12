@@ -1,5 +1,6 @@
 const crypto = require('crypto');
 const QRCode = require('qrcode');
+const ExcelJS = require('exceljs');
 const { pool, query } = require('../config/db');
 const { gestorEfetivoId } = require('./empresa.service');
 const {
@@ -382,11 +383,60 @@ async function inativarPesquisa(usuarioAutenticado, pesquisaId) {
 }
 
 /**
- * Exclui a pesquisa PERMANENTEMENTE — respostas, itens de resposta, scores,
- * indicadores mensais, consentimentos LGPD, blocos, perguntas e carteira de
- * clientes são todos apagados junto, via cascade do banco (nenhuma dessas
- * tabelas fica com registro órfão). Ação irreversível.
+ * Exporta a lista de respondentes ÚNICOS (deduplicados por e-mail) de TODAS
+ * as pesquisas do gestor — como uma lista de leads. Se a mesma pessoa
+ * respondeu mais de uma vez (mesmo e-mail), usa os dados da resposta mais
+ * recente dela (ex: se ela mudou de cargo entre uma pesquisa e outra).
+ * Pedido de Erick em 12/08/2026. Retorna um Buffer .xlsx, pronto pra servir.
  */
+async function exportarRespondentesUnicos(usuarioAutenticado) {
+  const gestorId = gestorEfetivoId(usuarioAutenticado);
+
+  const { rows } = await query(
+    `SELECT nome_completo, municipio, perfil, cargo, email FROM (
+       SELECT DISTINCT ON (r.email)
+              r.nome_completo, pc.nome_cliente AS municipio, perfil_sub.valor_texto AS perfil, r.cargo, r.email, r.respondido_em
+       FROM respostas r
+       JOIN pesquisas p ON p.id = r.pesquisa_id
+       JOIN pesquisa_clientes pc ON pc.id = r.pesquisa_cliente_id
+       LEFT JOIN LATERAL (
+         SELECT ri.valor_texto
+         FROM respostas_itens ri
+         JOIN pesquisa_perguntas pp ON pp.id = ri.pergunta_id
+         JOIN pesquisa_blocos pb ON pb.id = pp.bloco_id
+         WHERE ri.resposta_id = r.id AND pb.tipo_bloco = 'identificacao' AND pp.tipo = 'multipla_escolha'
+         LIMIT 1
+       ) perfil_sub ON true
+       WHERE p.gestor_id = $1 AND r.concluida = true AND r.email IS NOT NULL AND r.email <> ''
+       ORDER BY r.email, r.respondido_em DESC
+     ) sub
+     ORDER BY nome_completo ASC`,
+    [gestorId]
+  );
+
+  const workbook = new ExcelJS.Workbook();
+  workbook.creator = 'SIGESC';
+  workbook.created = new Date();
+
+  const planilha = workbook.addWorksheet('Leads');
+  planilha.columns = [
+    { header: 'Nome do Respondente', key: 'nome_completo', width: 32 },
+    { header: 'Município', key: 'municipio', width: 30 },
+    { header: 'Perfil', key: 'perfil', width: 24 },
+    { header: 'Cargo', key: 'cargo', width: 28 },
+    { header: 'E-mail', key: 'email', width: 32 },
+  ];
+  planilha.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
+  planilha.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0D1B2A' } };
+
+  rows.forEach((r) => {
+    planilha.addRow({ nome_completo: r.nome_completo, municipio: r.municipio, perfil: r.perfil || '—', cargo: r.cargo, email: r.email });
+  });
+
+  const buffer = await workbook.xlsx.writeBuffer();
+  return { buffer, total: rows.length };
+}
+
 /**
  * Exclui a pesquisa PERMANENTEMENTE — respostas, itens de resposta, scores,
  * indicadores mensais, consentimentos LGPD, blocos, perguntas e carteira de
@@ -528,6 +578,7 @@ module.exports = {
   inativarPesquisa,
   excluirPesquisa,
   gerarQrCodePesquisa,
+  exportarRespondentesUnicos,
   duplicarPesquisa,
   AppError,
 };
