@@ -250,6 +250,10 @@ node tests/test_excluir_empresa.js
 # perguntas travadas por já ter resposta)
 node tests/test_editar_titulo_pesquisa.js
 
+# Teste do Sprint 16 / v1.7 (Análise por Respostas — volume, top 5 por Score
+# Geral e ISV, sentimento de IA, volume x valor)
+node tests/test_analise_respostas.js
+
 # IMPORTANTE: se for rodar vários testes em sequência numa sessão só, alguns
 # dependem de rodar DEPOIS de test_sprint4_motor_calculo.js (que gera dados
 # conhecidos usados por outros testes). E evite encadear dezenas de scripts

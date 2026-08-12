@@ -30,6 +30,7 @@
           <div class="side-nav-sub aberto" id="sub-relatorios">
             <a href="#" data-view="cliente" id="link-cliente">Por Cliente</a>
             <a href="#" data-view="indicador" id="link-indicador">Por Dimensão</a>
+            <a href="#" data-view="respostas" id="link-respostas">Por Respostas</a>
           </div>
         </div>
         <a href="/app/configuracoes.html">⚙️ Configurações</a>
@@ -111,6 +112,52 @@
           </div>
         </div>
 
+        <div id="view-respostas" style="display:none;">
+          <div class="card" style="margin-bottom:20px;">
+            <div class="card-head"><h3>Volume de respostas por cliente</h3><p class="card-sub">Do cliente que mais respondeu para o que menos respondeu</p></div>
+            <div id="volume-bars"></div>
+          </div>
+
+          <div class="grid-2" style="margin-bottom:20px;">
+            <div class="card">
+              <div class="card-head-com-tabs">
+                <h3 id="titulo-top-maiores">🟢 Top 5 — respostas que mais agregaram valor</h3>
+                <div class="metrica-tabs">
+                  <button class="metrica-tab ativo" data-metrica="score">Score Geral</button>
+                  <button class="metrica-tab" data-metrica="isv">Valor Percebido (ISV)</button>
+                </div>
+              </div>
+              <table class="tabela-top">
+                <thead><tr><th>#</th><th>Cliente</th><th>Respondente</th><th>Perfil</th><th id="coluna-valor-maiores">Score</th></tr></thead>
+                <tbody id="top-maiores"></tbody>
+              </table>
+            </div>
+            <div class="card">
+              <div class="card-head"><h3 id="titulo-top-menores">🔴 Top 5 — respostas que menos agregaram valor</h3></div>
+              <table class="tabela-top">
+                <thead><tr><th>#</th><th>Cliente</th><th>Respondente</th><th>Perfil</th><th id="coluna-valor-menores">Score</th></tr></thead>
+                <tbody id="top-menores"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="card" style="margin-bottom:20px;">
+            <div class="card-head"><h3>Comparativo — os 5 maiores vs. os 5 menores</h3></div>
+            <svg viewBox="0 0 900 260" width="100%" height="260" id="chart-comparativo"></svg>
+          </div>
+
+          <div class="grid-2">
+            <div class="card">
+              <div class="card-head"><h3>Sentimento de IA — toda a carteira</h3><p class="card-sub">Consolidado de todos os comentários abertos já analisados</p></div>
+              <div id="sentimento-area"></div>
+            </div>
+            <div class="card">
+              <div class="card-head"><h3>Volume × Valor</h3><p class="card-sub">Clientes que respondem mais tendem a dar notas melhores ou piores?</p></div>
+              <svg viewBox="0 0 320 220" width="100%" height="220" id="scatter-volume-valor"></svg>
+            </div>
+          </div>
+        </div>
+
         <div id="app-footer"></div>
       </div>
     </div>
@@ -120,6 +167,7 @@
   .card{background:#fff;border-radius:14px;padding:20px;box-shadow:var(--shadow);border:1px solid #EEF2F7;margin-bottom:20px;}
   .card-head{margin-bottom:14px;}
   .card-head h3{font-size:14.5px;}
+  .card-sub{font-size:11.5px;color:var(--cinza-medio);margin-top:2px;}
   .grid-2{display:grid;grid-template-columns:1.4fr 1fr;gap:16px;margin-bottom:20px;}
   @media(max-width:900px){.grid-2{grid-template-columns:1fr;}}
   /* Gerar PDF é recurso de tela grande (o PDF em si já é pensado pra
@@ -164,6 +212,21 @@
   .comp-val{width:36px;text-align:right;font-weight:700;font-size:13px;flex-shrink:0;}
 
   .rank-pos-cell{width:28px;height:28px;border-radius:50%;color:#fff;font-weight:800;font-size:11.5px;display:flex;align-items:center;justify-content:center;}
+
+  .volume-row{display:flex;align-items:center;gap:14px;margin-bottom:14px;}
+  .volume-nome{width:170px;flex-shrink:0;font-size:12.5px;font-weight:600;color:var(--azul-profundo);}
+  .volume-track{flex:1;height:22px;background:var(--cinza-claro);border-radius:6px;overflow:hidden;}
+  .volume-fill{height:100%;background:linear-gradient(90deg,#2563EB,#00B4A6);display:flex;align-items:center;padding-left:10px;color:#fff;font-size:11px;font-weight:700;border-radius:6px;}
+  .tabela-top{width:100%;border-collapse:collapse;font-size:12.5px;}
+  .tabela-top th{text-align:left;font-size:10.5px;text-transform:uppercase;color:var(--cinza-medio);padding:6px 8px;border-bottom:1px solid #EEF2F7;}
+  .tabela-top td{padding:9px 8px;border-bottom:1px solid #F8FAFC;}
+  .tabela-top .pos-circulo{width:22px;height:22px;border-radius:50%;color:#fff;font-weight:800;font-size:10.5px;display:flex;align-items:center;justify-content:center;}
+  .tabela-top .score-val{font-weight:800;}
+  .card-head-com-tabs{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:14px;}
+  .card-head-com-tabs h3{font-size:14.5px;}
+  .metrica-tabs{display:flex;gap:6px;}
+  .metrica-tab{padding:6px 12px;border-radius:8px;background:var(--cinza-claro);color:var(--cinza-escuro);font-weight:600;font-size:11.5px;}
+  .metrica-tab.ativo{background:var(--azul-inteligente);color:#fff;}
 
 </style>
 
@@ -367,25 +430,178 @@
       }
     }
 
+    // ============ ANÁLISE POR RESPOSTAS ============
+    let dadosRespostasCache = null;
+    let metricaAtual = 'score';
+
+    async function carregarAnaliseRespostas() {
+      try {
+        dadosRespostasCache = await apiFetch('/api/relatorios/respostas');
+        renderVolumePorCliente(dadosRespostasCache.volumePorCliente);
+        renderTopsPorMetrica('score');
+        renderSentimento(dadosRespostasCache.sentimento);
+        renderVolumeXValor(dadosRespostasCache.volumeXValor);
+      } catch (err) {
+        mostrarMensagem('Erro ao carregar Análise por Respostas: ' + err.message, 'error');
+      }
+    }
+
+    function renderVolumePorCliente(lista) {
+      const area = document.getElementById('volume-bars');
+      if (lista.length === 0) { area.innerHTML = `<div class="table-empty">Nenhuma resposta recebida ainda.</div>`; return; }
+      const max = Math.max(...lista.map((v) => v.total));
+      area.innerHTML = lista.map((v) => `
+        <div class="volume-row">
+          <span class="volume-nome">${v.nomeCliente}</span>
+          <div class="volume-track"><div class="volume-fill" style="width:${(v.total / max) * 100}%;">${v.total} resposta${v.total === 1 ? '' : 's'}</div></div>
+        </div>
+      `).join('');
+    }
+
+    function renderTabelaRespostas(id, lista) {
+      const tbody = document.getElementById(id);
+      if (lista.length === 0) { tbody.innerHTML = `<tr><td colspan="5" class="table-empty">Sem dados suficientes ainda.</td></tr>`; return; }
+      tbody.innerHTML = lista.map((r, i) => `
+        <tr>
+          <td><div class="pos-circulo" style="background:${corFaixa(r.valor)};">${i + 1}</div></td>
+          <td>${r.nomeCliente}</td>
+          <td>${r.nomeCompleto}</td>
+          <td style="color:var(--cinza-medio);">${r.cargo || '—'}</td>
+          <td class="score-val" style="color:${corFaixa(r.valor)};">${fmt(r.valor)}</td>
+        </tr>
+      `).join('');
+    }
+
+    function renderTopsPorMetrica(metrica) {
+      metricaAtual = metrica;
+      if (!dadosRespostasCache) return;
+      const maiores = metrica === 'score' ? dadosRespostasCache.topScoreMaiores : dadosRespostasCache.topIsvMaiores;
+      const menores = metrica === 'score' ? dadosRespostasCache.topScoreMenores : dadosRespostasCache.topIsvMenores;
+      const rotulo = metrica === 'score' ? 'Score' : 'ISV';
+      renderTabelaRespostas('top-maiores', maiores);
+      renderTabelaRespostas('top-menores', menores);
+      document.getElementById('coluna-valor-maiores').textContent = rotulo;
+      document.getElementById('coluna-valor-menores').textContent = rotulo;
+      renderGraficoComparativoRespostas(maiores, menores);
+    }
+
+    document.querySelectorAll('.metrica-tab').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.metrica-tab').forEach((b) => b.classList.remove('ativo'));
+        btn.classList.add('ativo');
+        renderTopsPorMetrica(btn.dataset.metrica);
+      });
+    });
+
+    function renderGraficoComparativoRespostas(maiores, menores) {
+      const svg = document.getElementById('chart-comparativo');
+      if (maiores.length === 0 && menores.length === 0) { svg.innerHTML = ''; return; }
+      const todos = [...maiores, ...menores];
+      const barW = 60, gap = 20, startX = 40;
+      let html = '';
+      todos.forEach((r, i) => {
+        const grupo = i < maiores.length ? 0 : 1;
+        const idxNoGrupo = i < maiores.length ? i : i - maiores.length;
+        const x = startX + grupo * (5 * (barW + gap) + 60) + idxNoGrupo * (barW + gap);
+        const h = (r.valor / 10) * 160;
+        const y = 200 - h;
+        html += `<rect x="${x}" y="${y}" width="${barW}" height="${h}" rx="6" fill="${corFaixa(r.valor)}"/>`;
+        html += `<text x="${x + barW / 2}" y="${y - 8}" text-anchor="middle" font-size="13" font-weight="700" fill="${corFaixa(r.valor)}">${fmt(r.valor)}</text>`;
+        html += `<text x="${x + barW / 2}" y="220" text-anchor="middle" font-size="9" fill="#64748B">${r.nomeCompleto.split(' ')[0]}</text>`;
+      });
+      html += `<text x="${startX + 2 * (barW + gap)}" y="245" text-anchor="middle" font-size="11" font-weight="700" fill="#15803D">MAIORES VALORES</text>`;
+      html += `<text x="${startX + 5 * (barW + gap) + 60 + 2 * (barW + gap)}" y="245" text-anchor="middle" font-size="11" font-weight="700" fill="#B91C1C">MENORES VALORES</text>`;
+      svg.innerHTML = html;
+    }
+
+    function renderSentimento(sentimento) {
+      const area = document.getElementById('sentimento-area');
+      if (sentimento.total === 0) {
+        area.innerHTML = `<div class="table-empty">Nenhuma resposta aberta foi analisada por IA ainda.</div>`;
+        return;
+      }
+      const cores = { positivo: '#22C55E', neutro: '#94A3B8', negativo: '#EF4444' };
+      const labels = { positivo: 'Positivo', neutro: 'Neutro', negativo: 'Negativo' };
+      const cx = 60, cy = 60, r = 50, rInterno = 28;
+      let anguloAtual = 0;
+      let path = '';
+      Object.entries(sentimento.consolidado).forEach(([chave, valor]) => {
+        const fracao = valor / sentimento.total;
+        if (fracao === 0) return;
+        const anguloFim = anguloAtual + fracao * 360;
+        const p0 = polarParaCartesiano(cx, cy, r, anguloAtual);
+        const p1 = polarParaCartesiano(cx, cy, r, anguloFim);
+        const largeArc = fracao > 0.5 ? 1 : 0;
+        path += `<path d="M ${p0.x} ${p0.y} A ${r} ${r} 0 ${largeArc} 1 ${p1.x} ${p1.y} L ${cx} ${cy} Z" fill="${cores[chave]}"/>`;
+        anguloAtual = anguloFim;
+      });
+      path += `<circle cx="${cx}" cy="${cy}" r="${rInterno}" fill="#fff"/>`;
+      const legenda = Object.entries(sentimento.consolidado).map(([chave, valor]) => `
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+          <span style="width:10px;height:10px;border-radius:50%;background:${cores[chave]};display:inline-block;"></span>
+          <span style="font-size:12.5px;color:var(--cinza-escuro);">${labels[chave]}</span>
+          <strong style="font-size:12.5px;">${Math.round((valor / sentimento.total) * 100)}%</strong>
+        </div>
+      `).join('');
+      area.innerHTML = `<div style="display:flex;align-items:center;gap:24px;"><svg viewBox="0 0 120 120" width="120" height="120">${path}</svg><div>${legenda}</div></div>`;
+    }
+
+    function polarParaCartesiano(cx, cy, r, angGraus) {
+      const angRad = (angGraus - 90) * Math.PI / 180;
+      return { x: cx + r * Math.cos(angRad), y: cy + r * Math.sin(angRad) };
+    }
+
+    function renderVolumeXValor(lista) {
+      const svg = document.getElementById('scatter-volume-valor');
+      if (lista.length === 0) { svg.innerHTML = ''; return; }
+      const w = 320, h = 190, pad = 30;
+      const maxVol = Math.max(...lista.map((d) => d.total));
+      let html = '';
+      for (let g = 0; g <= 4; g++) {
+        const gy = pad + (g / 4) * (h - pad);
+        html += `<line x1="${pad}" y1="${gy}" x2="${w - 10}" y2="${gy}" stroke="#F1F5F9" stroke-width="1"/>`;
+      }
+      html += `<line x1="${pad}" y1="${pad}" x2="${pad}" y2="${h}" stroke="#CBD5E1" stroke-width="1"/>`;
+      html += `<line x1="${pad}" y1="${h}" x2="${w - 10}" y2="${h}" stroke="#CBD5E1" stroke-width="1"/>`;
+      lista.forEach((d) => {
+        const x = pad + (d.total / maxVol) * (w - pad - 20);
+        const y = h - (d.media / 10) * (h - pad);
+        html += `<circle cx="${x}" cy="${y}" r="7" fill="${corFaixa(d.media)}" fill-opacity="0.85"/>`;
+        html += `<text x="${x}" y="${y - 12}" text-anchor="middle" font-size="8.5" fill="#334155">${d.nomeCliente.split(' ')[0]}</text>`;
+      });
+      html += `<text x="${w / 2}" y="${h + 16}" text-anchor="middle" font-size="9" fill="#64748B">Volume de respostas →</text>`;
+      svg.innerHTML = html;
+    }
+
     function mostrarView(view) {
       document.getElementById('view-cliente').style.display = view === 'cliente' ? 'block' : 'none';
       document.getElementById('view-indicador').style.display = view === 'indicador' ? 'block' : 'none';
+      document.getElementById('view-respostas').style.display = view === 'respostas' ? 'block' : 'none';
       document.getElementById('link-cliente').classList.toggle('ativo', view === 'cliente');
       document.getElementById('link-indicador').classList.toggle('ativo', view === 'indicador');
-      document.getElementById('titulo-pagina').textContent = view === 'cliente' ? 'Análise por Cliente' : 'Análise por Dimensão';
-      document.getElementById('sub-pagina').textContent = view === 'cliente'
-        ? 'Acompanhe a saúde de um cliente específico, de todas as suas pesquisas'
-        : 'Compare todos os clientes numa dimensão específica — Atendimento, Infraestrutura, Tecnologia ou Valor Percebido';
+      document.getElementById('link-respostas').classList.toggle('ativo', view === 'respostas');
+      const titulos = { cliente: 'Análise por Cliente', indicador: 'Análise por Dimensão', respostas: 'Análise por Respostas' };
+      const subtitulos = {
+        cliente: 'Acompanhe a saúde de um cliente específico, de todas as suas pesquisas',
+        indicador: 'Compare todos os clientes numa dimensão específica — Atendimento, Infraestrutura, Tecnologia ou Valor Percebido',
+        respostas: 'Volume de respostas e quais delas mais e menos agregaram valor',
+      };
+      document.getElementById('titulo-pagina').textContent = titulos[view];
+      document.getElementById('sub-pagina').textContent = subtitulos[view];
+      if (view === 'respostas' && !dadosRespostasCache) carregarAnaliseRespostas();
     }
 
     document.getElementById('link-cliente').addEventListener('click', (e) => { e.preventDefault(); mostrarView('cliente'); });
+    document.getElementById('link-respostas').addEventListener('click', (e) => { e.preventDefault(); mostrarView('respostas'); });
 
     // "Gerar PDF" sempre reflete o que está na tela naquele momento — pega
     // o cliente ou a dimensão atualmente selecionados, não algo separado.
     document.getElementById('btn-pdf').addEventListener('click', async () => {
       const btn = document.getElementById('btn-pdf');
       const textoOriginal = btn.textContent;
-      const viewAtiva = document.getElementById('view-cliente').style.display !== 'none' ? 'cliente' : 'indicador';
+      let viewAtiva = 'cliente';
+      if (document.getElementById('view-indicador').style.display !== 'none') viewAtiva = 'indicador';
+      if (document.getElementById('view-respostas').style.display !== 'none') viewAtiva = 'respostas';
       let url, nomeArquivo;
 
       if (viewAtiva === 'cliente') {
@@ -393,11 +609,14 @@
         if (!clienteId) { mostrarMensagem('Selecione um cliente primeiro.', 'error'); return; }
         url = `/api/relatorios/clientes/${clienteId}/pdf`;
         nomeArquivo = 'analise-cliente.pdf';
-      } else {
+      } else if (viewAtiva === 'indicador') {
         const tabAtiva = document.querySelector('.indicador-tab.ativo');
         if (!tabAtiva) { mostrarMensagem('Selecione uma dimensão primeiro.', 'error'); return; }
         url = `/api/relatorios/dimensoes/${tabAtiva.dataset.chave}/pdf`;
         nomeArquivo = `analise-dimensao-${tabAtiva.dataset.chave}.pdf`;
+      } else {
+        url = '/api/relatorios/respostas/pdf';
+        nomeArquivo = 'analise-respostas.pdf';
       }
 
       btn.textContent = 'Gerando...';
@@ -448,6 +667,7 @@
 
       const paramsIniciais = new URLSearchParams(window.location.search);
       if (paramsIniciais.get('view') === 'indicador') mostrarView('indicador');
+      else if (paramsIniciais.get('view') === 'respostas') mostrarView('respostas');
       else mostrarView('cliente');
     })();
   </script>
