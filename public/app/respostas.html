@@ -50,6 +50,7 @@
           </button>
           <div><h2>Respostas</h2><div class="sub">Todas as respostas recebidas pela sua carteira</div></div>
         </div>
+        <button class="btn btn-outline-dark btn-exportar-web" id="btn-exportar-respostas" style="padding:9px 16px;font-size:13px;">⬇ Exportar Respostas (Excel)</button>
       </div>
 
       <div class="content">
@@ -84,6 +85,7 @@
   </div>
 
 <style>
+  @media(max-width:900px){.btn-exportar-web{display:none !important;}}
   .overlay{position:fixed;inset:0;background:rgba(13,27,42,.5);display:none;align-items:center;justify-content:center;z-index:100;padding:20px;}
   .overlay.active{display:flex;}
   .panel{background:#fff;border-radius:16px;max-width:640px;width:100%;max-height:88vh;overflow-y:auto;}
@@ -302,6 +304,31 @@
     })();
 
     document.getElementById('btn-logout').addEventListener('click', () => { localStorage.removeItem('sigesc_token'); window.location.href = '/login.html'; });
+
+    document.getElementById('btn-exportar-respostas').addEventListener('click', async () => {
+      const btn = document.getElementById('btn-exportar-respostas');
+      const textoOriginal = btn.textContent;
+      btn.textContent = 'Gerando...';
+      btn.disabled = true;
+      try {
+        const resp = await fetch('/api/respostas/exportar', { headers: { Authorization: 'Bearer ' + token } });
+        if (!resp.ok) throw new Error('Falha ao gerar o Excel.');
+        const blob = await resp.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'sigesc-respostas-detalhadas.xlsx';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+      } catch (err) {
+        mostrarMensagem('Erro ao exportar respostas: ' + err.message, 'error');
+      } finally {
+        btn.textContent = textoOriginal;
+        btn.disabled = false;
+      }
+    });
+
     const toggleBtnRelatorios = document.getElementById('toggle-relatorios');
     const subMenuRelatorios = document.getElementById('sub-relatorios');
     if (toggleBtnRelatorios) {

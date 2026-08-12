@@ -254,6 +254,11 @@ node tests/test_editar_titulo_pesquisa.js
 # Geral e ISV, sentimento de IA, volume x valor)
 node tests/test_analise_respostas.js
 
+# Testes do Sprint 17 / v1.8 (exportação de Excel — Leads deduplicados e
+# Respostas Detalhadas com colunas abertas por bloco)
+node tests/test_exportar_leads.js
+node tests/test_exportar_respostas_colunas.js
+
 # IMPORTANTE: se for rodar vários testes em sequência numa sessão só, alguns
 # dependem de rodar DEPOIS de test_sprint4_motor_calculo.js (que gera dados
 # conhecidos usados por outros testes). E evite encadear dezenas de scripts

@@ -61,7 +61,10 @@
             <div class="sub">Todas as pesquisas da sua carteira</div>
           </div>
         </div>
-        <button class="btn btn-primary" id="btn-nova-pesquisa" style="padding:9px 16px;font-size:13px;">+ Criar pesquisa</button>
+        <div style="display:flex;gap:10px;">
+          <button class="btn btn-outline-dark btn-exportar-leads-web" id="btn-exportar-leads" style="padding:9px 16px;font-size:13px;">⬇ Exportar Leads (Excel)</button>
+          <button class="btn btn-primary" id="btn-nova-pesquisa" style="padding:9px 16px;font-size:13px;">+ Criar pesquisa</button>
+        </div>
       </div>
 
       <div class="content">
@@ -107,6 +110,10 @@
   </div>
 
 <style>
+  /* Exportar leads é recurso de tela grande (baixa um arquivo Excel pra
+     análise/uso fora do sistema) — mesmo padrão já usado nos botões de
+     PDF/Modo Apresentação, escondido no mobile. */
+  @media(max-width:900px){.btn-exportar-leads-web{display:none !important;}}
   .alert-box{padding:12px 16px;border-radius:10px;font-size:13px;font-weight:600;margin-bottom:16px;}
   .alert-error{background:#FEE2E2;color:#B91C1C;}
   .alert-success{background:#DCFCE7;color:#15803D;}
@@ -239,6 +246,30 @@
 
     document.getElementById('btn-nova-pesquisa').addEventListener('click', () => {
       window.location.href = '/app/pesquisa-wizard.html';
+    });
+
+    document.getElementById('btn-exportar-leads').addEventListener('click', async () => {
+      const btn = document.getElementById('btn-exportar-leads');
+      const textoOriginal = btn.textContent;
+      btn.textContent = 'Gerando...';
+      btn.disabled = true;
+      try {
+        const resp = await fetch('/api/pesquisas/exportar-respondentes', { headers: { Authorization: 'Bearer ' + token } });
+        if (!resp.ok) throw new Error('Falha ao gerar o Excel.');
+        const blob = await resp.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'sigesc-leads-respondentes.xlsx';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+      } catch (err) {
+        mostrarMensagem('Erro ao exportar leads: ' + err.message, 'error');
+      } finally {
+        btn.textContent = textoOriginal;
+        btn.disabled = false;
+      }
     });
 
     (async () => {
