@@ -92,8 +92,13 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;}
 
 .policy-box{
   background:var(--cinza-claro);border-radius:12px;padding:16px;font-size:12.5px;color:var(--cinza-escuro);
-  line-height:1.65;max-height:150px;overflow-y:auto;margin-bottom:22px;border:1px solid #EEF2F7;
+  line-height:1.65;max-height:150px;overflow-y:auto;margin-bottom:10px;border:1px solid #EEF2F7;
 }
+.policy-link-btn{
+  display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;color:var(--azul-inteligente);
+  text-decoration:underline;margin-bottom:22px;
+}
+.policy-link-btn:hover{color:#1d4fd1;}
 
 .pf-nav{display:flex;justify-content:space-between;gap:12px;margin-top:26px;}
 .btn{padding:13px 22px;border-radius:11px;font-weight:600;font-size:14.5px;transition:.15s;display:inline-flex;align-items:center;justify-content:center;gap:8px;}
@@ -360,6 +365,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;}
         <h3>Sua opinião fortalece nossas soluções</h3>
         <p class="desc">Esta pesquisa avalia sua experiência recente. Leva poucos minutos e suas respostas contribuem diretamente para melhorias contínuas.</p>
         <div class="policy-box"><strong>Política de Tratamento de Dados</strong><br>${pesquisa.politicaPrivacidadeTexto}</div>
+        ${pesquisa.politicaPrivacidadeLink ? `<a href="${pesquisa.politicaPrivacidadeLink}" target="_blank" rel="noopener noreferrer" class="policy-link-btn">📄 Clique aqui para acessar nosso Política para Tratamento de Dados Pessoais</a>` : ''}
         <div class="pf-field">
           <label>${consentimento ? consentimento.texto : 'Você concorda com o tratamento dos seus dados?'}</label>
           <div class="pill-row">

@@ -85,7 +85,7 @@ async function criarPesquisa(usuarioAutenticado, { titulo, empresaId, rotuloEnti
     throw new AppError('Empresa é obrigatória — toda pesquisa pertence a exatamente uma empresa.');
   }
 
-  const empresa = await query('SELECT id, ativa, politica_privacidade_padrao FROM empresas WHERE id = $1 AND gestor_id = $2', [empresaId, gestorId]);
+  const empresa = await query('SELECT id, ativa, politica_privacidade_padrao, politica_privacidade_link FROM empresas WHERE id = $1 AND gestor_id = $2', [empresaId, gestorId]);
   if (empresa.rows.length === 0) {
     throw new AppError('Empresa não encontrada na sua conta.', 404);
   }
@@ -93,6 +93,7 @@ async function criarPesquisa(usuarioAutenticado, { titulo, empresaId, rotuloEnti
     throw new AppError('Esta empresa está inativa — reative-a antes de criar uma pesquisa nova nela.', 409);
   }
   const politicaDaEmpresa = empresa.rows[0].politica_privacidade_padrao;
+  const linkPoliticaDaEmpresa = empresa.rows[0].politica_privacidade_link;
 
   const client = await pool.connect();
   try {
@@ -118,10 +119,10 @@ async function criarPesquisa(usuarioAutenticado, { titulo, empresaId, rotuloEnti
     const slug = await gerarSlugUnico(titulo);
 
     const novaPesquisa = await client.query(
-      `INSERT INTO pesquisas (gestor_id, empresa_id, ciclo_id, titulo, rotulo_entidade, slug_link_publico, status, politica_privacidade_texto)
-       VALUES ($1, $2, $3, $4, $5, $6, 'rascunho', $7)
+      `INSERT INTO pesquisas (gestor_id, empresa_id, ciclo_id, titulo, rotulo_entidade, slug_link_publico, status, politica_privacidade_texto, politica_privacidade_link)
+       VALUES ($1, $2, $3, $4, $5, $6, 'rascunho', $7, $8)
        RETURNING *`,
-      [gestorId, empresaId, cicloIdFinal, titulo.trim(), rotuloEntidade || ROTULO_ENTIDADE_PADRAO, slug, politicaDaEmpresa || POLITICA_PRIVACIDADE_PADRAO]
+      [gestorId, empresaId, cicloIdFinal, titulo.trim(), rotuloEntidade || ROTULO_ENTIDADE_PADRAO, slug, politicaDaEmpresa || POLITICA_PRIVACIDADE_PADRAO, linkPoliticaDaEmpresa || null]
     );
     const pesquisa = novaPesquisa.rows[0];
 
@@ -210,7 +211,7 @@ async function buscarDetalhe(usuarioAutenticado, pesquisaId) {
   return { ...pesquisa, blocos, clientes, empresa: empresaRows[0], ciclo: cicloRows[0] };
 }
 
-async function editarPesquisa(usuarioAutenticado, pesquisaId, { titulo, rotuloEntidade, politicaPrivacidadeTexto }) {
+async function editarPesquisa(usuarioAutenticado, pesquisaId, { titulo, rotuloEntidade, politicaPrivacidadeTexto, politicaPrivacidadeLink }) {
   await carregarPesquisaOuFalhar(usuarioAutenticado, pesquisaId);
 
   const { rows } = await query(
@@ -218,10 +219,11 @@ async function editarPesquisa(usuarioAutenticado, pesquisaId, { titulo, rotuloEn
        titulo = COALESCE($1, titulo),
        rotulo_entidade = COALESCE($2, rotulo_entidade),
        politica_privacidade_texto = COALESCE($3, politica_privacidade_texto),
+       politica_privacidade_link = COALESCE($4, politica_privacidade_link),
        updated_at = now()
-     WHERE id = $4
+     WHERE id = $5
      RETURNING *`,
-    [titulo || null, rotuloEntidade || null, politicaPrivacidadeTexto || null, pesquisaId]
+    [titulo || null, rotuloEntidade || null, politicaPrivacidadeTexto || null, politicaPrivacidadeLink !== undefined ? politicaPrivacidadeLink : null, pesquisaId]
   );
   return rows[0];
 }

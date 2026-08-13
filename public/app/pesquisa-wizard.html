@@ -287,6 +287,10 @@
           <div class="field"><label>Texto da Política de Privacidade</label>
             <textarea id="politica-texto" rows="4" style="width:100%;padding:10px;border:1px solid #E2E8F0;border-radius:8px;font-family:inherit;">${pesquisaAtual.politica_privacidade_texto}</textarea>
           </div>
+          <div class="field"><label>Link do documento de política (opcional)</label>
+            <input type="text" id="politica-link" value="${pesquisaAtual.politica_privacidade_link || ''}" placeholder="https://..." style="width:100%;padding:10px;border:1px solid #E2E8F0;border-radius:8px;font-family:inherit;">
+            <p style="font-size:11px;color:var(--cinza-medio);margin-top:4px;">Se preenchido, o formulário mostra um botão pra acessar esse documento. Se deixar em branco, o botão não aparece.</p>
+          </div>
           <button class="btn btn-primary" style="padding:8px 16px;font-size:12.5px;" onclick="salvarPolitica()">Salvar política</button>
           <div style="margin-top:16px;">${bloco.perguntas.map(p => renderQRow(p, bloco)).join('')}</div>`;
       } else if (bloco.tipo_bloco === 'identificacao') {
@@ -399,7 +403,13 @@
 
     async function salvarPolitica() {
       try {
-        await apiFetch(`/api/pesquisas/${pesquisaId}`, { method: 'PUT', body: JSON.stringify({ politicaPrivacidadeTexto: document.getElementById('politica-texto').value }) });
+        await apiFetch(`/api/pesquisas/${pesquisaId}`, {
+          method: 'PUT',
+          body: JSON.stringify({
+            politicaPrivacidadeTexto: document.getElementById('politica-texto').value,
+            politicaPrivacidadeLink: document.getElementById('politica-link').value.trim(),
+          }),
+        });
         mostrarMensagem('Política salva.', 'success');
         await carregarPesquisa();
       } catch (err) { mostrarMensagem(err.message, 'error'); }

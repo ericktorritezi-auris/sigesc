@@ -19,7 +19,7 @@ function gestorEfetivoId(usuarioAutenticado) {
 async function listarEmpresas(usuarioAutenticado) {
   const gestorId = gestorEfetivoId(usuarioAutenticado);
   const { rows } = await query(
-    `SELECT e.id, e.nome, e.ativa, e.logo_url, e.cor_primaria, e.cor_secundaria, e.politica_privacidade_padrao, e.created_at,
+    `SELECT e.id, e.nome, e.ativa, e.logo_url, e.cor_primaria, e.cor_secundaria, e.politica_privacidade_padrao, e.politica_privacidade_link, e.created_at,
             (SELECT COUNT(*) FROM pesquisas p WHERE p.empresa_id = e.id) AS total_pesquisas
      FROM empresas e WHERE e.gestor_id = $1 ORDER BY e.ativa DESC, e.nome ASC`,
     [gestorId]
@@ -30,7 +30,7 @@ async function listarEmpresas(usuarioAutenticado) {
 async function buscarEmpresa(usuarioAutenticado, empresaId) {
   const gestorId = gestorEfetivoId(usuarioAutenticado);
   const { rows } = await query(
-    `SELECT id, nome, ativa, logo_url, cor_primaria, cor_secundaria, politica_privacidade_padrao, created_at
+    `SELECT id, nome, ativa, logo_url, cor_primaria, cor_secundaria, politica_privacidade_padrao, politica_privacidade_link, created_at
      FROM empresas WHERE id = $1 AND gestor_id = $2`,
     [empresaId, gestorId]
   );
@@ -40,7 +40,7 @@ async function buscarEmpresa(usuarioAutenticado, empresaId) {
   return rows[0];
 }
 
-async function editarEmpresa(usuarioAutenticado, empresaId, { nome, logoUrl, corPrimaria, corSecundaria, politicaPrivacidadePadrao }) {
+async function editarEmpresa(usuarioAutenticado, empresaId, { nome, logoUrl, corPrimaria, corSecundaria, politicaPrivacidadePadrao, politicaPrivacidadeLink }) {
   const gestorId = gestorEfetivoId(usuarioAutenticado);
 
   const existente = await query('SELECT id FROM empresas WHERE id = $1 AND gestor_id = $2', [empresaId, gestorId]);
@@ -61,15 +61,17 @@ async function editarEmpresa(usuarioAutenticado, empresaId, { nome, logoUrl, cor
        logo_url = COALESCE($2, logo_url),
        cor_primaria = COALESCE($3, cor_primaria),
        cor_secundaria = COALESCE($4, cor_secundaria),
-       politica_privacidade_padrao = COALESCE($5, politica_privacidade_padrao)
-     WHERE id = $6
-     RETURNING id, nome, ativa, logo_url, cor_primaria, cor_secundaria, politica_privacidade_padrao`,
+       politica_privacidade_padrao = COALESCE($5, politica_privacidade_padrao),
+       politica_privacidade_link = $6
+     WHERE id = $7
+     RETURNING id, nome, ativa, logo_url, cor_primaria, cor_secundaria, politica_privacidade_padrao, politica_privacidade_link`,
     [
       nome ? nome.trim() : null,
       logoUrl || null,
       corPrimaria || null,
       corSecundaria || null,
       politicaPrivacidadePadrao || null,
+      politicaPrivacidadeLink ? politicaPrivacidadeLink.trim() : null,
       empresaId,
     ]
   );

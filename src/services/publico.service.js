@@ -84,6 +84,7 @@ async function buscarPesquisaPublica(slug) {
     titulo: pesquisa.titulo,
     rotuloEntidade: pesquisa.rotulo_entidade,
     politicaPrivacidadeTexto: pesquisa.politica_privacidade_texto,
+    politicaPrivacidadeLink: pesquisa.politica_privacidade_link,
     blocos,
     clientes,
     organizacaoNome: empresa.nome,

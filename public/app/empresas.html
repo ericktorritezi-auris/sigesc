@@ -88,6 +88,7 @@
           <div class="field" style="flex:1;"><label>Cor secundária</label><input type="text" id="e-cor-secundaria" placeholder="#00B4A6"></div>
         </div>
         <div class="field"><label>Política de Privacidade (Bloco 1 das pesquisas novas)</label><textarea id="e-politica" rows="4"></textarea></div>
+        <div class="field"><label>Link do documento de política (opcional)</label><input type="text" id="e-politica-link" placeholder="https://..."><p style="font-size:11px;color:var(--cinza-medio);margin-top:4px;">Se preenchido, o formulário mostra um botão pra acessar esse documento (ex: PDF assinado). Se deixar em branco, o botão não aparece.</p></div>
         <p style="font-size:11.5px;color:var(--cinza-medio);margin-bottom:16px;">Aplica-se ao formulário público das pesquisas desta empresa e é herdada como padrão em pesquisas novas.</p>
         <button class="btn btn-primary btn-block" id="btn-confirmar-editar">Salvar alterações</button>
 
@@ -196,6 +197,7 @@
       document.getElementById('e-cor-primaria').value = empresa.cor_primaria || '';
       document.getElementById('e-cor-secundaria').value = empresa.cor_secundaria || '';
       document.getElementById('e-politica').value = empresa.politica_privacidade_padrao || '';
+      document.getElementById('e-politica-link').value = empresa.politica_privacidade_link || '';
       document.getElementById('e-ativa').value = empresa.ativa ? '1' : '0';
       document.getElementById('e-total-pesquisas').value = empresa.total_pesquisas;
 
@@ -237,6 +239,7 @@
             corPrimaria: document.getElementById('e-cor-primaria').value,
             corSecundaria: document.getElementById('e-cor-secundaria').value,
             politicaPrivacidadePadrao: document.getElementById('e-politica').value,
+            politicaPrivacidadeLink: document.getElementById('e-politica-link').value.trim(),
           }),
         });
         fecharModal('modal-editar');
