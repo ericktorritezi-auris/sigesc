@@ -1,6 +1,6 @@
 {
   "name": "sigesc",
-  "version": "1.8.0",
+  "version": "1.9.0",
   "description": "SIGESC - Sistema Inteligente de Gestao Estrategica da Saude Contratual",
   "main": "server.js",
   "engines": {
